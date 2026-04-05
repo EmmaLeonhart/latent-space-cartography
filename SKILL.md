@@ -11,6 +11,10 @@ allowed-tools: Bash(python *), Bash(pip *), Bash(ollama *), WebFetch
 
 This skill reproduces the results from "Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Tokenizer Defect in mxbai-embed-large." It applies standard TransE-style relational displacement analysis to frozen text embedding models using Wikidata knowledge graph triples as probes.
 
+**Source repository:** https://github.com/EmmaLeonhart/latent-space-cartography
+
+All scripts, the frozen model weights (mxbai-embed-large-v1, via Git LFS), the paper PDF, and pre-computed collision data are in this repository. Clone it first — all steps below assume you are working from this repo.
+
 **Two key findings:**
 1. **30 model-agnostic relational operations** discovered across three embedding models — functional (many-to-one) relations encode as consistent vector arithmetic; symmetric relations do not.
 2. **A silent tokenizer defect** in mxbai-embed-large: 147,687 cross-entity embedding pairs at cosine >= 0.95, caused by WordPiece `[UNK]` token dominance on diacritical text. "Hokkaid&#333;" has cosine 1.0 with "Eire" but only 0.45 with its own ASCII equivalent "Hokkaido."
@@ -71,11 +75,13 @@ This restores the exact model weights and tokenizer used in the paper, including
 Description: Clone the repository and verify dependencies.
 
 ```bash
-git clone https://github.com/EmmaLeonhart/fol-discovery.git
-cd fol-discovery
+git clone https://github.com/EmmaLeonhart/latent-space-cartography.git
+cd latent-space-cartography
 pip install -r requirements.txt
 mkdir -p data
 ```
+
+Note: The repository uses Git LFS for the frozen model weights (`model/mxbai-embed-large-v1.gguf`, 639 MB). If `git clone` does not fetch LFS objects automatically, run `git lfs pull` after cloning.
 
 Verify:
 
