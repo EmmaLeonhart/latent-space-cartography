@@ -72,7 +72,7 @@ class PaperPDF(FPDF):
         if self.page_no() > 1:
             self.set_font('Helvetica', 'I', 8)
             self.set_text_color(128, 128, 128)
-            self.cell(0, 5, 'Leonhart (2026) - Discovering FOL in Arbitrary Embedding Spaces', align='C')
+            self.cell(0, 5, 'Leonhart (2026) - Latent Space Cartography Applied to Wikidata', align='C')
             self.ln(8)
 
     def footer(self):
