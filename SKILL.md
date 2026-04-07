@@ -1,5 +1,5 @@
 ---
-name: fol-discovery
+name: latent-space-cartography
 description: Discover relational displacement operations in frozen embedding spaces using Wikidata triples. Reproduces the key findings from "Latent Space Cartography Applied to Wikidata" — 30 model-agnostic operations with r=0.861 self-diagnostic correlation, and a silent [UNK] tokenizer defect in mxbai-embed-large causing 147,687 embedding collisions.
 allowed-tools: Bash(python *), Bash(pip *), Bash(ollama *), WebFetch
 ---
