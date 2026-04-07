@@ -420,3 +420,4 @@ No GPU required. All models run on CPU via Ollama.
 - Mikolov et al. (2013). Distributed Representations of Words and Phrases. NeurIPS.
 - Sun et al. (2019). RotatE: Knowledge Graph Embedding by Relational Rotation. ICLR.
 - Wang et al. (2014). Knowledge Graph Embedding by Translating on Hyperplanes. AAAI.
+
