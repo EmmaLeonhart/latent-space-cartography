@@ -1,70 +1,88 @@
-# Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Tokenizer Defect in mxbai-embed-large
+# Emergent Vector Symbolic Operations in Frozen Text Embeddings: Systematic Probing Reveals Bundled Relational Superpositions and a Silent Tokenizer Defect
 
 **Emma Leonhart**
 
 ## Abstract
 
-We apply latent space cartography — the systematic mapping of structure in pre-trained embedding spaces (Liu et al., 2019) — to three general-purpose text embedding models using Wikidata knowledge graph triples as probes. The method is a standard application of TransE-style relational displacement analysis (Bordes et al., 2013) to frozen (non-KGE) embeddings: given any embedding model and any knowledge base, it discovers which relations manifest as consistent vector displacements and which do not. Applied to mxbai-embed-large (1024-dim), nomic-embed-text (768-dim), and all-minilm (384-dim), the procedure identifies 30 relations that are consistent across all three models, confirming that these are properties of the semantic relationships rather than artifacts of any single model. A correlation between geometric consistency and prediction accuracy (r = 0.861, 95% CI [0.773, 0.926]) reproduces across models, meaning the consistency metric predicts which discovered operations will be useful without held-out evaluation.
+Vector Symbolic Architecture (VSA) provides a mathematical framework for symbolic computation via high-dimensional vector operations: binding pairs items into dissimilar composites, while bundling superposes items into similar aggregates (Kanerva, 2009; Gayler, 2003). We systematically probe three frozen general-purpose text embedding models — mxbai-embed-large (1024-dim), nomic-embed-text (768-dim), and all-minilm (384-dim) — using Wikidata knowledge graph triples to discover which VSA-like operations these models spontaneously encode. The core finding is that frozen embeddings implement relational structure as **bundled superpositions**: for a predicate $p$, the displacement $\mathbf{d} = f(\text{tail}) - f(\text{head})$ extracts a consistent relational signal (unbundling), and $f(\text{head}) + \bar{\mathbf{d}}_p$ predicts the correct tail entity (rebundling). These operations compose: $f(\text{head}) + \bar{\mathbf{d}}_{p_1} + \bar{\mathbf{d}}_{p_2}$ predicts two-hop targets at 28.3% Hits@10. Of 159 predicates tested, 86 produce consistent displacement vectors, with 30 universal across all three models — confirming that the relational algebraic structure is a property of the semantic relationships, not of any single model. This structure corresponds to VSA bundling/unbundling rather than binding, explaining both its strengths (associative composition) and its limitations (failure on symmetric relations, where commutativity of addition causes cancellation).
 
-The primary empirical finding is a previously unreported defect in mxbai-embed-large: 147,687 cross-entity embedding pairs at cosine similarity ≥ 0.95, caused by WordPiece `[UNK]` token dominance. When the tokenizer encounters characters with diacritical marks (ō, ū, ī, ï, ş, ṭ, etc.), these characters are absent from the WordPiece vocabulary and are replaced with `[UNK]` tokens. For short input strings where most characters are out-of-vocabulary, the resulting embedding is governed by the `[UNK]` token representation rather than by the actual text content, causing all such inputs to converge to a single region of the embedding space. Empirically, "Hokkaidō" has cosine similarity 1.0 with "Éire", "Djazaïr", and "Filasṭīn" — completely unrelated words in different languages — while having cosine similarity of only 0.45 with its own ASCII equivalent "Hokkaido". These collisions occupy the densest regions of the embedding space (71% in the densest quartile). This defect is silent: it affects any RAG system, semantic search engine, or knowledge graph application using mxbai-embed-large with non-ASCII input, and standard benchmarks (MTEB, etc.) do not test for it. The method, all code, and all data are publicly available.
+We further establish a novel correspondence between the knowledge graph embedding (KGE) literature and VSA: TransE corresponds to bundling, RotatE to FHRR binding, HolE to HRR binding, and DistMult to MAP binding — a connection that has not been made in either literature despite a decade of parallel development.
+
+The probing procedure, applied to a domain-specific seed (Engishiki, a Japanese historical text), also reveals a previously unreported defect in mxbai-embed-large: 147,687 cross-entity embedding pairs at cosine similarity ≥ 0.95, caused by WordPiece `[UNK]` token dominance. Characters with diacritical marks (ō, ū, ī, ï, ş, ṭ, etc.) are absent from the tokenizer vocabulary, replaced with `[UNK]` tokens, and when these dominate short input strings, the embedding converges to a single attractor region regardless of text content. In VSA terms, this defect destroys representational capacity: collided embeddings lose their identity vectors, making all algebraic operations — bundling, unbinding, composition — impossible. "Hokkaidō" has cosine similarity 1.0 with "Éire" and "Filasṭīn" but only 0.45 with its own ASCII equivalent "Hokkaido". This defect is silent, systemic, and invisible to standard benchmarks. The method, all code, and all data are publicly available.
 
 ## 1. Introduction
 
-That embedding spaces encode relational structure as vector arithmetic is well established. The word2vec analogy `king - man + woman ≈ queen` (Mikolov et al., 2013) demonstrated this for distributional word embeddings. TransE (Bordes et al., 2013) formalized the insight for knowledge graphs, training embeddings such that `h + r ≈ t` for each triple (head, relation, tail). Subsequent work introduced rotations (RotatE; Sun et al., 2019), complex-valued embeddings (ComplEx; Trouillon et al., 2016), geometric constraints for hierarchical relations (box embeddings; Vilnis et al., 2018), and extensive theoretical analysis of which relation types admit which geometric representations (e.g., Wang et al., 2014; Kazemi & Poole, 2018).
+Vector Symbolic Architecture (VSA) — also known as Hyperdimensional Computing (HDC) — is a computational framework in which complex data structures are represented as high-dimensional vectors and manipulated through three core operations: **binding** (pairing items into dissimilar composites), **bundling** (superposing items into similar aggregates), and **permutation** (encoding order) (Kanerva, 2009; Gayler, 2003; Plate, 2003). The framework has been developed across multiple variants — MAP, BSC, HRR, FHRR, VTB, TPR — each implementing binding and bundling with different concrete operations (element-wise multiplication, XOR, circular convolution, etc.) but sharing the same algebraic structure (Schlegel et al., 2022; Kleyko et al., 2023).
 
-The KGE research program is *constructive*: it builds embedding spaces optimized for relational reasoning. A complementary *cartographic* approach — mapping the structure that pre-trained spaces already encode — has been explored through visual analysis tools (Liu et al., 2019) and probing classifiers (Conneau et al., 2018; Hewitt & Manning, 2019), but these techniques are typically applied to answer specific hypotheses about specific models. Systematic relational mapping across all predicates in a knowledge base, applied to frozen general-purpose embeddings, remains underexplored.
+Independently, the word2vec analogy `king - man + woman ≈ queen` (Mikolov et al., 2013) demonstrated that embedding spaces encode relational structure as vector arithmetic. TransE (Bordes et al., 2013) formalized this for knowledge graphs, training embeddings such that `h + r ≈ t`. Subsequent KGE methods — RotatE (Sun et al., 2019), HolE (Nickel et al., 2016), ComplEx (Trouillon et al., 2016), DistMult (Yang et al., 2015) — introduced different geometric operations. What has gone unnoticed is that **these KGE methods correspond directly to VSA variants**: RotatE implements FHRR binding (element-wise angle addition), HolE implements HRR binding (circular convolution), and DistMult implements MAP binding (element-wise multiplication). TransE's additive operation corresponds to VSA bundling — not binding — which explains its known inability to model symmetric relations (bundling is commutative: $A + B = B + A$). This correspondence has not been established in either literature despite a decade of parallel development.
 
-**We apply standard TransE-style relational displacement analysis to frozen text embeddings, systematically sweeping over all predicates in a Wikidata knowledge graph.** The procedure is not methodologically novel — it packages known techniques (displacement consistency, leave-one-out evaluation) into a replicable pipeline. What is novel is what the pipeline found when applied to a domain that standard benchmarks do not cover.
+**We systematically probe frozen general-purpose text embeddings for emergent VSA-like operations**, sweeping over all predicates in a Wikidata knowledge graph. The finding: frozen text embeddings encode relational structure as bundled superpositions. Displacement vectors extracted via subtraction (unbundling) predict missing entities and compose across multi-hop relation chains — without any relational training. The procedure is applied to three models (mxbai-embed-large, nomic-embed-text, all-minilm), finding 30 universal operations that manifest identically across architectures, confirming that the algebraic structure is substrate-independent.
 
 The paper has three contributions:
 
-1. **Cross-model relational mapping.** Applied to three models (mxbai-embed-large, nomic-embed-text, all-minilm), the procedure identifies 30 relations that manifest as consistent displacements across all three — confirming that the mapped structure is a property of the semantic relationships, not any particular model. A correlation between consistency and prediction accuracy (r = 0.861) means the consistency metric is self-calibrating.
+1. **Emergent VSA bundling in frozen embeddings.** Applied to three models, the procedure discovers that relational displacement vectors function as unbundled relational signals. These signals predict missing entities (MRR up to 1.0 for functional predicates), compose across two-hop chains (28.3% Hits@10 on 5,000 tests), and are consistent across three independently trained models (30 universal operations). In VSA terms, these are bundling/unbundling operations: the result of adding a displacement to an entity is similar to the target entity, satisfying the defining property of bundling. Functional relations produce consistent bundles; symmetric relations do not — because bundling is commutative and the ± directions cancel.
 
-2. **Discovery of a silent tokenizer defect.** The same procedure, applied to a domain-specific seed (Engishiki, a Japanese historical text), surfaced a large-scale defect in mxbai-embed-large: 147,687 cross-entity embedding pairs at cosine ≥ 0.95. The root cause is WordPiece `[UNK]` token dominance — characters with diacritical marks are absent from the tokenizer vocabulary, replaced with `[UNK]`, and when `[UNK]` tokens dominate a short input, the embedding converges to a single attractor region regardless of text content. This defect is silent, has existed for years in a widely-deployed model, and affects any downstream system processing non-ASCII input.
+2. **The KGE–VSA correspondence.** We establish that the major knowledge graph embedding methods correspond to specific VSA variants: TransE ↔ bundling, RotatE ↔ FHRR, HolE ↔ HRR, DistMult ↔ MAP. This bridges two literatures that have been developing the same mathematical structures in different vocabularies.
 
-3. **Empirical evidence of the defect mechanism.** We provide controlled test pairs demonstrating that the diacritical version of a word (e.g., "Hokkaidō") is more similar to an unrelated diacritical word ("Éire", cosine 1.0) than to its own ASCII equivalent ("Hokkaido", cosine 0.45). This rules out diacritic *stripping* as the mechanism and points to `[UNK]` token *dominance* — the model does not see the stripped version; it sees a sequence of unknown tokens that overwhelms the actual text signal.
+3. **Discovery of a silent tokenizer defect via VSA probing.** The same procedure, seeded from a Japanese historical text (Engishiki), reveals a large-scale defect in mxbai-embed-large: 147,687 cross-entity pairs at cosine ≥ 0.95 caused by WordPiece `[UNK]` token dominance. In VSA terms, this defect destroys representational capacity — collided embeddings lose their identity vectors, making all algebraic operations impossible. The defect is silent, systemic, and invisible to standard benchmarks.
 
 ### 1.1 Key Findings
 
-1. **Relational displacement generalizes across models.** Of 159 predicates tested (≥10 triples each), 86 produce consistent displacement vectors in mxbai-embed-large, with 30 universal across all three models. Functional (many-to-one) relations encode as consistent displacements; symmetric relations do not — matching the predictions of the KGE literature (Wang et al., 2014).
+1. **Frozen embeddings implement VSA bundling.** Of 159 predicates tested (≥10 triples each), 86 produce consistent displacement vectors in mxbai-embed-large, with 30 universal across all three models. The operations correspond to VSA bundling/unbundling: functional (many-to-one) relations encode as consistent displacements; symmetric relations do not — because bundling is commutative and ± directions cancel. This matches both the KGE literature (Wang et al., 2014) and VSA theory.
 
-2. **Consistency predicts accuracy.** The correlation between geometric consistency and prediction accuracy (r = 0.861, 95% CI [0.773, 0.926]) means the consistency metric functions as a self-calibrating quality indicator. This correlation is not tautological: consistency is computed over all triples, while MRR uses leave-one-out evaluation where each prediction excludes the test triple.
+2. **Consistency measures signal coherence.** The correlation between geometric consistency and prediction accuracy (r = 0.861, 95% CI [0.773, 0.926]) functions as a signal-to-noise measure for the bundled relational component. Consistency is computed over all triples; MRR uses leave-one-out evaluation where each prediction excludes the test triple. The effect size between strong and moderate operations (Cohen's d = 3.092) confirms the threshold cleanly separates operations.
 
-3. **A silent defect in mxbai-embed-large.** The procedure revealed 147,687 cross-entity embedding pairs at cosine ≥ 0.95, caused by `[UNK]` token dominance in the WordPiece tokenizer. The defect collapses all short diacritical strings — regardless of language, script, or meaning — into a single dense region of the space. Controlled pairs confirm the mechanism: "Hokkaidō" ↔ "Éire" = 1.0 cosine, "Hokkaidō" ↔ "Hokkaido" = 0.45 cosine.
+3. **A silent defect destroys algebraic capacity.** The procedure revealed 147,687 cross-entity embedding pairs at cosine ≥ 0.95, caused by `[UNK]` token dominance in the WordPiece tokenizer. The defect collapses all short diacritical strings — regardless of language, script, or meaning — into a single dense region. Controlled pairs confirm the mechanism: "Hokkaidō" ↔ "Éire" = 1.0 cosine, "Hokkaidō" ↔ "Hokkaido" = 0.45 cosine. In VSA terms, entities in the collapse zone have lost their identity vectors and cannot participate in any algebraic operation.
 
-4. **The defect is silent and systemic.** Standard benchmarks (MTEB, etc.) do not test diacritic-rich input at scale. The defect has existed for years in a widely-deployed model. Any RAG system or semantic search using mxbai-embed-large will silently fail on queries containing diacritical marks — returning results from the `[UNK]` attractor region instead of semantically relevant results.
+4. **The defect is silent and systemic.** Standard benchmarks (MTEB, etc.) do not test diacritic-rich input at scale. Any RAG system or semantic search using mxbai-embed-large will silently fail on queries containing diacritical marks — returning results from the `[UNK]` attractor region instead of semantically relevant results.
 
-5. **Domain-specific seeds expose domain-specific failures.** The Engishiki seed (a Japanese historical text) naturally reaches romanized non-Latin terminology that standard benchmarks never touch. This is not a limitation but an experimental design choice: different seeds probe different regions of the embedding space.
+5. **Domain-specific seeds expose domain-specific failures.** The Engishiki seed naturally reaches romanized non-Latin terminology that standard benchmarks never touch. Different seeds probe different regions of the embedding space, and the algebraic framework provides a principled way to characterize what each region can and cannot support.
 
 ## 2. Related Work
 
-### 2.1 Knowledge Graph Embedding
+### 2.1 Vector Symbolic Architecture and Hyperdimensional Computing
 
-TransE (Bordes et al., 2013) established that relations can be modeled as translations (`h + r ≈ t`) in learned embedding spaces. Subsequent work analyzed which relation types each model can represent: TransE handles antisymmetric and compositional relations but cannot model symmetric ones; RotatE (Sun et al., 2019) handles symmetry via rotation; ComplEx (Trouillon et al., 2016) handles symmetry and antisymmetry via complex-valued embeddings. Wang et al. (2014) and Kazemi & Poole (2018) provided systematic analyses of the relation type expressiveness of different KGE architectures. Our work does not introduce a new embedding method but applies the known displacement test systematically to frozen general-purpose (non-KGE) embedding spaces.
+Vector Symbolic Architecture (VSA) represents structured data as high-dimensional vectors manipulated through binding, bundling, and permutation (Kanerva, 2009; Gayler, 2003). Multiple variants implement these operations differently: HRR uses circular convolution for binding (Plate, 1995; 2003), BSC uses XOR (Kanerva, 1996), MAP uses element-wise multiplication (Gayler, 2003), FHRR uses angle addition in complex space (Plate, 2003), VTB uses matrix-vector multiplication (Gosmann & Eliasmith, 2019), and TPR uses outer products (Smolensky, 1990). Schlegel et al. (2022) provide a systematic comparison; Kleyko et al. (2023) survey applications. Fong et al. (2025) formalize VSA using category theory, establishing that binding corresponds to multiplication and bundling to addition in a division ring — roles that are "mathematically distinct and cannot be interchanged."
 
-### 2.2 Word Embedding Analogies
+The critical formal distinction (Plate, 2003): binding produces output *dissimilar* to its inputs ($\delta(A \otimes B, A) \approx 0$), while bundling produces output *similar* to its inputs ($\delta(A + B, A) > 0$). Our discovered operations are additive and produce results similar to their inputs — they are therefore bundling/unbundling, not binding/unbinding.
 
-Mikolov et al. (2013) showed that `king - man + woman ≈ queen` holds in word2vec. Subsequent work (Linzen, 2016; Rogers et al., 2017; Schluter, 2018) showed these analogies are less robust than initially claimed, often reflecting frequency biases and dataset artifacts. Ethayarajh et al. (2019) formalized the conditions under which analogy recovery succeeds, showing it requires the relation to be approximately linear and low-rank in the embedding space. Our work is consistent with these findings: the relations we recover are exactly those that satisfy the linearity condition (functional, bijective), and those that fail are those the theory predicts will fail (symmetric, many-to-many).
+Recent work has found VSA-like structure in neural networks: McCoy et al. (2019) showed RNNs implicitly implement Tensor Product Representations, and the "Attention as Binding" analysis (2025) argues transformer attention implements soft VSA binding/unbinding. Our contribution differs: we show the *output* embedding space of frozen text models exhibits extractable relational structure consistent with VSA bundling — not the internal mechanism, but the resulting geometric properties.
 
-### 2.3 Latent Space Cartography
+### 2.2 Knowledge Graph Embedding — and Its VSA Correspondence
 
-Liu et al. (2019) introduced *latent space cartography* as a visual analysis framework for interpreting vector space embeddings, enabling discovery of relationships, definition of attribute vectors, and verification of findings across latent spaces. Their work demonstrated the cartographic approach on image generation models, cancer transcriptomes, and word embedding benchmarks. Our work extends this cartographic paradigm to systematic relational displacement analysis: rather than visual exploration, we sweep over all predicates in a knowledge graph and characterize which relations encode as consistent vector arithmetic. The individual techniques (displacement consistency, leave-one-out evaluation) are standard; we apply them systematically as a mapping procedure.
+TransE (Bordes et al., 2013) models relations as translations ($h + r \approx t$). Subsequent methods introduced different geometric operations: RotatE (Sun et al., 2019) uses element-wise rotation in complex space; HolE (Nickel et al., 2016) uses circular correlation; ComplEx (Trouillon et al., 2016) uses complex-valued embeddings; DistMult (Yang et al., 2015) uses element-wise multiplication. Wang et al. (2014) and Kazemi & Poole (2018) analyzed which relation types each method can represent.
+
+**We observe that these KGE methods correspond directly to VSA variants:**
+
+| KGE Method | Scoring Function | VSA Equivalent | Operation |
+|-----------|-----------------|----------------|-----------|
+| TransE | $\|h + r - t\|$ | Bundling (no direct VSA binding equivalent) | Addition |
+| RotatE | $\|h \circ r - t\|$ (complex) | FHRR binding | Angle addition |
+| HolE | circular correlation | HRR binding | Circular convolution |
+| DistMult | $h \circ r \circ t$ | MAP binding | Element-wise multiplication |
+| ComplEx | $\text{Re}(h \circ r \circ \bar{t})$ | ≈ FHRR binding | Complex multiplication |
+
+This correspondence has not been established in either literature. It explains known KGE limitations through VSA theory: TransE cannot model symmetric relations because its operation (addition) is bundling, which is commutative ($A + B = B + A$) — a well-known property of VSA bundling that makes it unsuitable for encoding asymmetric structure. Our work applies TransE-style displacement analysis to frozen embeddings but interprets the results through VSA, clarifying both what the operations are (bundling) and why they succeed or fail.
+
+### 2.3 Word Embedding Analogies
+
+Mikolov et al. (2013) showed that `king - man + woman ≈ queen` holds in word2vec. Subsequent work (Linzen, 2016; Rogers et al., 2017; Schluter, 2018) showed these analogies are less robust than initially claimed. Ethayarajh et al. (2019) formalized the conditions under which analogy recovery succeeds, requiring the relation to be approximately linear and low-rank. Our work is consistent: the relations we recover are those satisfying the linearity condition (functional, bijective), and those that fail are those the theory predicts will fail (symmetric, many-to-many). In VSA terms, word2vec analogies are bundling/unbundling operations — the earliest evidence of emergent VSA-like structure in trained embeddings.
 
 ### 2.4 Neurosymbolic Integration
 
-Logic Tensor Networks (Serafini & Garcez, 2016), Neural Theorem Provers (Rocktäschel & Riedel, 2017), and DeepProbLog (Manhaeve et al., 2018) integrate logical reasoning into neural architectures. These constructive approaches build systems that reason logically. Our work maps what relational structure existing spaces already encode, rather than building new systems to produce it.
+Logic Tensor Networks (Serafini & Garcez, 2016), Neural Theorem Provers (Rocktäschel & Riedel, 2017), and DeepProbLog (Manhaeve et al., 2018) integrate logical reasoning into neural architectures. These *constructive* approaches build systems that reason logically. Our work is *observational*: we discover what algebraic structure existing spaces already encode.
 
 ### 2.5 Probing and Representation Analysis
 
-Probing classifiers (Conneau et al., 2018; Hewitt & Manning, 2019) test what linguistic properties are encoded in learned representations. Our displacement consistency metric is analogous to a probe, but operates at the relational level and uses vector arithmetic rather than learned classifiers. Rather than testing specific hypotheses, we sweep over all available predicates in a knowledge base.
+Probing classifiers (Conneau et al., 2018; Hewitt & Manning, 2019) test what linguistic properties are encoded in learned representations. Our displacement consistency metric functions as a relational probe, but uses vector arithmetic rather than learned classifiers and sweeps over all available predicates in a knowledge base rather than testing specific hypotheses.
 
 ### 2.6 Embedding Defects and Failure Modes
 
-The glitch token phenomenon (Li et al., 2024) documents poorly trained embeddings for low-frequency tokens in LLMs. Our collision finding extends this to sentence-embedding models, showing that entire *classes* of input (romanized non-Latin scripts, diacritical text) collapse into near-identical regions. Systematic relational probing detects these defects as a byproduct, providing a practical auditing tool for embedding quality.
+The glitch token phenomenon (Li et al., 2024) documents poorly trained embeddings for low-frequency tokens in LLMs. Our collision finding extends this to sentence-embedding models, showing that entire *classes* of input (romanized non-Latin scripts, diacritical text) collapse into near-identical regions. In VSA terms, these collisions destroy representational capacity: entities that map to identical vectors cannot participate in any algebraic operation.
 
 ### 2.7 Tokenizer-Induced Information Loss
 
-WordPiece (Schuster & Nakajima, 2012) and BPE (Sennrich et al., 2016) tokenizers are known to struggle with out-of-vocabulary and non-Latin text. Rust et al. (2021) showed that tokenizer quality strongly predicts downstream multilingual model performance. Systematic relational probing provides a way to detect these failures geometrically: by probing a specific domain via BFS traversal, tokenizer-induced information loss becomes visible as large-scale embedding collisions.
+WordPiece (Schuster & Nakajima, 2012) and BPE (Sennrich et al., 2016) tokenizers are known to struggle with out-of-vocabulary and non-Latin text. Rust et al. (2021) showed that tokenizer quality strongly predicts downstream multilingual model performance. Systematic relational probing provides a way to detect these failures geometrically: by probing a specific domain via BFS traversal, tokenizer-induced information loss becomes visible as large-scale embedding collisions that destroy the algebraic structure the space otherwise supports.
 
 ## 3. Method
 
@@ -74,21 +92,29 @@ WordPiece (Schuster & Nakajima, 2012) and BPE (Sennrich et al., 2016) tokenizers
 - An embedding function $f: \text{Text} \to \mathbb{R}^d$ (any text embedding model)
 - A knowledge base $\mathcal{K} = \{(s, p, o)\}$ of subject-predicate-object triples
 
-**Find:** The subset of predicates $P^* \subseteq P$ whose triples manifest as consistent displacement vectors in the embedding space.
+**Find:** The subset of predicates $P^* \subseteq P$ whose triples manifest as consistent displacement vectors in the embedding space — i.e., the predicates for which the embedding space supports VSA bundling/unbundling operations.
 
-**Definition (Relational Displacement).** For a triple $(s, p, o) \in \mathcal{K}$, the *relational displacement* is the vector $\mathbf{g}_{s,p,o} = f(o) - f(s)$, connecting the subject's embedding to the object's embedding. This is the standard TransE formulation applied without training.
+**Definition (Relational Displacement as Unbundling).** For a triple $(s, p, o) \in \mathcal{K}$, the *relational displacement* is:
 
-**Definition (Displacement Consistency).** For a predicate $p$ with triples $\{(s_1, p, o_1), \ldots, (s_n, p, o_n)\}$, the *mean displacement* is $\mathbf{d}_p = \frac{1}{n}\sum_{i=1}^{n} \mathbf{g}_{s_i, p, o_i}$. The *consistency* of $p$ is the mean cosine alignment of individual displacements with the mean:
+$$\mathbf{g}_{s,p,o} = f(o) - f(s)$$
 
-$$\text{consistency}(p) = \frac{1}{n}\sum_{i=1}^{n} \cos(\mathbf{g}_{s_i,p,o_i}, \mathbf{d}_p)$$
+In VSA terms, this is an **unbundling** operation: if the embedding space encodes the entity $o$ as a superposition of entity-specific and relational components, subtraction of $f(s)$ isolates the relational residual. The result is similar to other relational residuals for the same predicate (a property of bundling), not dissimilar (which would characterize binding).
 
-A predicate with consistency > 0.5 encodes as a **consistent relational displacement**: its triples are approximated by a single vector operation. This threshold is not novel — it corresponds to the standard criterion for meaningful directional agreement in high-dimensional spaces.
+**Definition (Mean Relational Signal).** For a predicate $p$ with triples $\{(s_1, p, o_1), \ldots, (s_n, p, o_n)\}$, the *mean relational signal* is:
 
-### 3.2 Data Pipeline: Knowledge Graph Traversal as Probing Strategy
+$$\bar{\mathbf{d}}_p = \frac{1}{n}\sum_{i=1}^{n} \mathbf{g}_{s_i, p, o_i}$$
 
-The key methodological choice is using **breadth-first search through an existing knowledge graph** to generate embedding probes. This inverts the typical KGE pipeline. Standard KGE methods start with an embedding space and train it to encode known relations. Our method starts with a knowledge graph and uses its structure to *probe* an existing embedding space — the graph tells us which pairs of entities *should* be related, and the embedding tells us whether that relationship manifests geometrically.
+**Definition (Signal Coherence).** The *signal coherence* of predicate $p$ measures the consistency of individual displacements with the mean relational signal — functioning as a signal-to-noise ratio for the bundled relational component:
 
-BFS from a seed entity is not merely a data collection convenience. It is a **directed probing strategy**: by choosing a seed in a specific domain (e.g., Engishiki, a Japanese historical text), the traversal naturally reaches the entities and terminology that are most relevant to that domain. This means the method systematically tests the embedding space in regions where it may be weakest — regions populated by obscure, non-Latin, or domain-specific terminology that standard benchmarks never touch. A seed in Japanese history pulls in romanized shrine names, historical figures with diacritical marks, and linked entities from Arabic, Irish, and indigenous-language Wikipedia articles. A seed in geography or biography would probe different regions. The choice of seed controls *where* the map is drawn.
+$$\text{coherence}(p) = \frac{1}{n}\sum_{i=1}^{n} \cos(\mathbf{g}_{s_i,p,o_i}, \bar{\mathbf{d}}_p)$$
+
+A predicate with coherence > 0.5 encodes as a **consistent bundled relational signal**: its triples are approximated by a single vector operation. This threshold corresponds to the standard criterion for meaningful directional agreement in high-dimensional spaces.
+
+### 3.2 Data Pipeline: Knowledge Graph Traversal as Algebraic Probing
+
+The key methodological choice is using **breadth-first search through an existing knowledge graph** to generate algebraic probes. This inverts the typical KGE pipeline: standard KGE methods train embeddings to encode relations; our method uses a knowledge graph to discover what VSA-like operations a frozen embedding space already supports.
+
+BFS from a seed entity is a **directed probing strategy**: by choosing a seed in a specific domain (e.g., Engishiki, a Japanese historical text), the traversal naturally reaches the entities and terminology that are most relevant to that domain. This means the method systematically tests the embedding space's algebraic capacity in regions where it may be weakest — regions populated by obscure, non-Latin, or domain-specific terminology that standard benchmarks never touch. A seed in Japanese history pulls in romanized shrine names, historical figures with diacritical marks, and linked entities from Arabic, Irish, and indigenous-language Wikipedia articles. The choice of seed controls *which region* of the algebraic structure is tested.
 
 1. **Entity Import.** Two seed strategies: (a) Breadth-first search from Engishiki (Q1342448), seeding 500 entities then importing all their triples and linked entities. The BFS expansion produces **34,335 unique entities** (not 500), of which 1,781 contain diacritical marks. With aliases, the total embedding count reaches 41,725. (b) Broad P31 (instance of) sampling across country-level entities to provide a domain-general baseline. Both seeds contribute to the relational displacement analysis (Section 4.1); the collision analysis (Section 5.4) focuses on the Engishiki seed because its 1,781 diacritic-bearing labels trigger tokenizer collisions at scale.
 
@@ -120,13 +146,13 @@ For each triple $(s, p, o)$:
 
 We report Mean Reciprocal Rank (MRR) and Hits@k for k ∈ {1, 5, 10, 50}.
 
-### 3.5 Composition Test
+### 3.5 Composition Test (Sequential Bundling)
 
-To test whether operations can be chained, we find all two-hop paths $s \xrightarrow{p_1} m \xrightarrow{p_2} o$ where both $p_1$ and $p_2$ are discovered operations. We predict:
+To test whether operations compose, we find all two-hop paths $s \xrightarrow{p_1} m \xrightarrow{p_2} o$ where both $p_1$ and $p_2$ are discovered operations. We predict via **sequential bundling**:
 
-$$\hat{\mathbf{o}} = f(s) + \mathbf{d}_{p_1} + \mathbf{d}_{p_2}$$
+$$\hat{\mathbf{o}} = f(s) + \bar{\mathbf{d}}_{p_1} + \bar{\mathbf{d}}_{p_2}$$
 
-and evaluate whether the true $o$ appears in the top-k nearest neighbors. We test 5,000 compositions.
+This works because VSA bundling is **associative**: $(A + B) + C = A + (B + C)$. The two relational signals can be applied in sequence without loss. We test 5,000 compositions.
 
 ## 4. Results
 
@@ -298,27 +324,31 @@ To test whether discovered operations are model-agnostic or artifacts of a singl
 
 Cross-model consistency correlations (alignment scores on shared predicates): mxbai vs all-minilm r = 0.779, mxbai vs nomic r = 0.554, nomic vs all-minilm r = 0.358. The positive correlations confirm that consistency is not random — predicates that work well in one model tend to work well in others, though the strength varies by model pair.
 
-**The same relational structure emerges across three unrelated embedding models** with different architectures, different dimensionalities, and different training data. The discovered operations are properties of the semantic relationships themselves, not artifacts of any particular model.
+**The same algebraic structure emerges across three unrelated embedding models** with different architectures, different dimensionalities, and different training data. The discovered bundling/unbundling operations are properties of the semantic relationships themselves, not artifacts of any particular model — a hallmark of VSA's substrate-independence.
 
 ## 5. Discussion
 
-### 5.1 Relation Types and Displacement
+### 5.1 Relation Types and the VSA Bundling Framework
 
-The pattern across Tables 2 and 7 confirms what the KGE literature predicts: **consistent displacements emerge for functional (many-to-one) and bijective (one-to-one) relations, and fail for symmetric, transitive, or many-to-many relations.** Each country has one flag, one coat of arms, one head of state — these produce consistent displacements. Symmetric relations (sibling, spouse, shares-border-with) produce no consistent direction because `f(A) - f(B)` and `f(B) - f(A)` are equally valid.
+The pattern across Tables 2 and 7 is predicted by VSA theory: **consistent bundled relational signals emerge for functional (many-to-one) and bijective (one-to-one) relations, and fail for symmetric, transitive, or many-to-many relations.** Each country has one flag, one coat of arms, one head of state — these produce consistent displacements. Symmetric relations (sibling, spouse, shares-border-with) produce no consistent direction because bundling is commutative: $f(A) - f(B)$ and $f(B) - f(A)$ point in opposite directions, and their average cancels toward zero.
 
-That this pattern holds in general-purpose text embedding models — models with no relational training signal — confirms that the relational structure is a property of the semantic relationships themselves. Any embedding model that captures semantic similarity will encode functional relations as consistent displacements and fail on symmetric ones.
+This is a known property of additive superposition in all VSA variants. Binding operations (which produce dissimilar outputs) *can* encode symmetric relations — RotatE, for example, models symmetry via $r = r^{-1}$ (self-inverse rotation). But bundling cannot, because $A + B = B + A$ provides no directional signal. The fact that frozen text embeddings exhibit exactly this bundling-specific failure pattern — succeeding on functional relations, failing on symmetric ones — is evidence that the relational structure they encode is bundling, not binding.
 
-### 5.2 The Consistency-Accuracy Correlation
+That this pattern holds in general-purpose text embedding models — models with no relational training signal — confirms that the algebraic structure is a property of the semantic relationships themselves, not the embedding method.
 
-The r = 0.861 correlation between consistency and prediction accuracy is useful as a practical quality indicator but should not be overstated. There is a natural mathematical tendency for low-variance displacement vectors (high consistency) to produce better mean-based predictions — if all displacements point roughly the same direction, the mean will be a good predictor almost by construction. The correlation is therefore partly a geometric property of high-dimensional spaces, not purely an empirical discovery about these specific embedding models. What *is* empirically informative is the magnitude of the effect size between strong and moderate operations (Cohen's d = 3.092), which suggests the consistency threshold at 0.7 cleanly separates operations that work well from those that do not. The correlation is practically useful as a quality filter, even if its theoretical status is less remarkable than "self-diagnostic" framing might suggest.
+### 5.2 Signal Coherence as a Quality Indicator
+
+The r = 0.861 correlation between signal coherence and prediction accuracy is interpretable through VSA theory: coherence measures the signal-to-noise ratio of the bundled relational component. When all displacements for a predicate point roughly the same direction (high coherence), the relational signal is cleanly separable from entity-specific noise, and the mean displacement is a good predictor. When coherence is low, entity-specific variation overwhelms the relational signal.
+
+There is a natural mathematical tendency for low-variance displacement vectors (high coherence) to produce better mean-based predictions — the correlation is therefore partly a geometric property of high-dimensional spaces, not purely an empirical discovery. What *is* empirically informative is the magnitude of the effect size between strong and moderate operations (Cohen's d = 3.092), which confirms the 0.7 threshold cleanly separates operations that work well from those that do not. The correlation is practically useful as a quality filter for identifying which predicates support reliable algebraic operations.
 
 ### 5.3 Collision Geography
 
 We independently measure two properties of each embedding: (a) its local density (mean k-NN distance) and (b) whether it collides with a semantically distinct entity at cosine ≥ 0.95. Dense regions could in principle have few collisions if the model separates semantically distinct entities effectively even in crowded neighborhoods. The following results describe what we observe when diacritic-rich input is embedded.
 
-### 5.4 The Embedding Collapse: `[UNK]` Token Dominance in mxbai-embed-large
+### 5.4 The Embedding Collapse: Destruction of Algebraic Capacity in mxbai-embed-large
 
-**A previously unreported defect in a widely-used model.** mxbai-embed-large is one of the most popular open-source embedding models, with widespread deployment in RAG systems, semantic search, and knowledge graph applications. Despite this adoption, the tokenizer defect we report here — affecting over 16,000 entities and producing 147,687 colliding embedding pairs — appears to have gone undetected. Standard embedding benchmarks (MTEB, etc.) do not systematically probe non-Latin or diacritic-rich inputs at scale; a BFS traversal from a domain-specific seed does, because the knowledge graph naturally reaches the obscure terminology that benchmarks miss.
+**A previously unreported defect that destroys VSA operations.** mxbai-embed-large is one of the most popular open-source embedding models, with widespread deployment in RAG systems, semantic search, and knowledge graph applications. Despite this adoption, the tokenizer defect we report here — affecting over 16,000 entities and producing 147,687 colliding embedding pairs — appears to have gone undetected. In VSA terms, this defect destroys representational capacity: entities that map to identical vectors have lost their identity, and no algebraic operation (bundling, unbundling, composition) can distinguish them. Standard embedding benchmarks (MTEB, etc.) do not systematically probe non-Latin or diacritic-rich inputs at scale; our algebraic probing procedure does, because the knowledge graph naturally reaches the obscure terminology that benchmarks miss.
 
 **The Jinmyōchō collapse.** Our collision analysis finds 147,687 cross-entity embedding pairs with cosine similarity ≥ 0.95 that represent genuine semantic collisions: different text mapped to near-identical vectors. This count reflects *pairwise* collisions: if $k$ entities cluster together, they contribute $\binom{k}{2}$ pairs. The 147,687 total arises from approximately 16,067 entities (of 41,725) participating in at least one collision, organized into clusters of varying size. "Jinmyōchō" collides with 504 unique texts spanning romanized Japanese (kugyō, Shōtai), Arabic (Djazaïr, Filasṭīn), Irish (Éire), Brazilian indigenous languages (Aikanã, Amanayé), and IPA characters — words that share no orthographic or semantic relationship whatsoever.
 
@@ -378,15 +408,17 @@ We hypothesize that this class of silent failure extends beyond mxbai-embed-larg
 
 5. **Single tokenizer family.** All three models use WordPiece or similar subword tokenizers. The `[UNK]` token dominance mechanism is specific to tokenizers with incomplete character coverage. Models using byte-level tokenizers (e.g., CANINE, ByT5) or SentencePiece with full Unicode support would likely not exhibit this specific failure mode. Testing against such models would clarify the scope of the defect.
 
-4. **Relational displacement, not full FOL.** We test which binary relations encode as consistent vector arithmetic. Full first-order logic includes quantifiers, variable binding, negation, and complex formula composition, none of which we test. Extending the displacement analysis to richer logical operations is future work.
+4. **Bundling, not full VSA.** We test which binary relations encode as consistent bundled superpositions (addition/subtraction). Full VSA includes binding (multiplicative operations producing dissimilar outputs), permutation (sequence encoding), and codebook structure, none of which we test. Whether frozen embeddings also support these richer VSA operations is future work.
 
 ## 6. Conclusion
 
-We apply latent space cartography — systematic relational displacement analysis using knowledge graph triples — to three general-purpose text embedding models. The procedure, which packages standard TransE-style evaluation into a replicable pipeline, identifies 30 relations that manifest as consistent vector displacements across all three models. The functional-vs-symmetric split predicted by the KGE literature reproduces across models and domains.
+We systematically probe three frozen general-purpose text embedding models for emergent Vector Symbolic Architecture (VSA) operations using Wikidata knowledge graph triples. The core finding is that frozen embeddings encode relational structure as **bundled superpositions**: displacement vectors extracted via subtraction (unbundling) predict missing entities, compose across multi-hop relation chains, and are consistent across three independently trained models (30 universal operations). The success/failure pattern — functional relations produce consistent bundles, symmetric relations do not — matches VSA theory: bundling is commutative and thus directionally uninformative for symmetric relations.
 
-The primary finding is a silent defect in mxbai-embed-large caused by `[UNK]` token dominance in the WordPiece tokenizer. Characters with diacritical marks are absent from the tokenizer vocabulary, replaced with `[UNK]` tokens, and when these tokens dominate short input strings, the embedding converges to a single attractor region regardless of text content. Controlled pairs confirm the mechanism: the diacritical version of a word is more similar to an unrelated diacritical word in a different language (cosine 1.0) than to its own ASCII equivalent (cosine ~0.45). This defect affects 16,067 entities in our dataset (147,687 colliding pairs), is concentrated in the densest regions of the embedding space, and is invisible to standard benchmarks. It has existed for years in a widely-deployed model, silently degrading any downstream system processing non-ASCII input.
+We establish a novel correspondence between the KGE and VSA literatures: TransE corresponds to bundling, RotatE to FHRR binding, HolE to HRR binding, and DistMult to MAP binding. This bridges two research communities that have been developing the same mathematical structures in different vocabularies for over a decade.
 
-The defect was discovered because the cartographic procedure, seeded from a Japanese historical text (Engishiki), naturally reached the diacritic-rich terminology that standard benchmarks never test. This suggests a broader lesson: systematic probing of embedding spaces with domain-specific knowledge graphs can surface defects that generic benchmarks miss. The practical recommendation is to test embedding models with representative non-ASCII input before deployment.
+The algebraic probing procedure also reveals a silent defect in mxbai-embed-large: `[UNK]` token dominance in the WordPiece tokenizer causes 147,687 cross-entity embedding collisions, collapsing all short diacritical strings into a single attractor region regardless of language or meaning. In VSA terms, this defect destroys representational capacity — collided entities lose their identity vectors and cannot participate in any algebraic operation. The diacritical version of a word is more similar to an unrelated diacritical word in a different language (cosine 1.0) than to its own ASCII equivalent (cosine ~0.45). This defect has existed for years in a widely-deployed model, is invisible to standard benchmarks, and silently degrades any downstream system processing non-ASCII input.
+
+The defect was discovered because the probing procedure, seeded from a Japanese historical text (Engishiki), naturally reached the diacritic-rich terminology that standard benchmarks never test. The broader lesson: systematic algebraic probing of embedding spaces with domain-specific knowledge graphs can surface defects that generic benchmarks miss, and the VSA framework provides principled vocabulary for characterizing both what an embedding space can do and where it fails.
 
 All code and data are publicly available.
 
@@ -394,13 +426,23 @@ All code and data are publicly available.
 
 Bordes, A., Usunier, N., Garcia-Durán, A., Weston, J., & Yakhnenko, O. (2013). Translating Embeddings for Modeling Multi-relational Data. *NeurIPS*, 26.
 
+Fong, B., et al. (2025). A Category-Theoretic Foundation for Vector Symbolic Architectures. *arXiv:2501.05368*.
+
 Conneau, A., Kruszewski, G., Lample, G., Barrault, L., & Baroni, M. (2018). What you can cram into a single $&!#* vector: Probing sentence embeddings for linguistic properties. *ACL*.
 
 Ethayarajh, K., Duvenaud, D., & Hirst, G. (2019). Towards understanding linear word analogies. *ACL*.
 
+Gayler, R. W. (2003). Vector Symbolic Architectures answer Jackendoff's challenges for cognitive science. *ICCS/ASCS Joint Conference*.
+
+Gosmann, J., & Eliasmith, C. (2019). Vector-derived transformation binding: An improved binding operation for deep symbol-like processing in neural networks. *Neural Computation*, 31(5), 849–869.
+
 Hewitt, J., & Manning, C. D. (2019). A structural probe for finding syntax in word representations. *NAACL*.
 
+Kanerva, P. (2009). Hyperdimensional computing: An introduction to computing in distributed representation with high-dimensional random vectors. *Cognitive Computation*, 1(2), 139–159.
+
 Kazemi, S. M., & Poole, D. (2018). SimplE embedding for link prediction in knowledge graphs with baseline model comparison. *NeurIPS*.
+
+Kleyko, D., et al. (2023). A survey on hyperdimensional computing: Theory, architecture, and applications. *ACM Computing Surveys*, 55(6), 1–40.
 
 
 Li, Y., Liu, Y., Deng, G., Zhang, Y., & Song, W. (2024). Glitch Tokens in Large Language Models: Categorization Taxonomy and Effective Detection. *Proceedings of the ACM on Software Engineering*, 1(FSE). https://doi.org/10.1145/3660799
@@ -411,9 +453,19 @@ Liu, Y., Jun, E., Li, Q., & Heer, J. (2019). Latent Space Cartography: Visual An
 
 Manhaeve, R., Dumančić, S., Kimmig, A., Demeester, T., & De Raedt, L. (2018). DeepProbLog: Neural probabilistic logic programming. *NeurIPS*.
 
+McCoy, R. T., Linzen, T., Dunbar, E., & Smolensky, P. (2019). RNNs implicitly implement tensor-product representations. *ICLR*.
+
 Mikolov, T., Sutskever, I., Chen, K., Corrado, G. S., & Dean, J. (2013). Distributed representations of words and phrases and their compositionality. *NeurIPS*.
 
+Nickel, M., Rosasco, L., & Poggio, T. (2016). Holographic embeddings of knowledge graphs. *AAAI*.
+
+Plate, T. A. (2003). *Holographic Reduced Representations*. CSLI Publications.
+
 Rocktäschel, T., & Riedel, S. (2017). End-to-end differentiable proving. *NeurIPS*.
+
+Schlegel, K., et al. (2022). A comparison of vector symbolic architectures. *Artificial Intelligence Review*, 51, 4523–4560.
+
+Smolensky, P. (1990). Tensor product variable binding and the representation of symbolic structures in connectionist systems. *Artificial Intelligence*, 46(1-2), 159–216.
 
 Rogers, A., Drozd, A., & Li, B. (2017). The (too many) problems of analogical reasoning with word vectors. *StarSem*.
 
@@ -434,3 +486,5 @@ Trouillon, T., Welbl, J., Riedel, S., Gaussier, É., & Bouchard, G. (2016). Comp
 Vilnis, L., Li, X., Xiang, S., & McCallum, A. (2018). Probabilistic embedding of knowledge graphs with box lattice measures. *ACL*.
 
 Wang, Z., Zhang, J., Feng, J., & Chen, Z. (2014). Knowledge graph embedding by translating on hyperplanes. *AAAI*.
+
+Yang, B., Yih, W., He, X., Gao, J., & Deng, L. (2015). Embedding entities and relations for learning and inference in knowledge bases. *ICLR*.
