@@ -360,37 +360,13 @@ The phenomenon is reminiscent of glitch tokens (Li et al., 2024) but at a differ
 
 **Why the Engishiki seed matters.** Engishiki (Q1342448) is a 10th-century Japanese text whose entities include romanized shrine names (Jinmyōchō, Shikinaisha), historical Japanese personal names, and linked entities from Arabic, Irish, and indigenous-language Wikipedia articles. This floods the embedding space with exactly the inputs that trigger `[UNK]` token dominance, making the phenomenon measurable at scale. The defect exists regardless of seed choice — any diacritical input triggers it — but the Engishiki seed makes it *statistically visible* by providing thousands of affected entities in a single BFS traversal.
 
-### 5.5 Connection to Vector Symbolic Architecture
-
-The operations we discover — displacement extraction via subtraction, prediction via addition, composition via sequential addition — bear a structural resemblance to operations in Vector Symbolic Architecture (VSA), a framework for symbolic computation via high-dimensional vectors (Kanerva, 2009; Gayler, 2003). VSA defines two core operations: **binding** (pairing items into a composite that is *dissimilar* to both inputs) and **bundling** (superposing items into an aggregate that is *similar* to all inputs) (Plate, 2003). We tested empirically which of these our operations correspond to.
-
-**Experiment: Bundling vs. binding axioms.** For each of the 94 consistent predicates (alignment > 0.5), we computed the cosine similarity between the prediction result $f(s) + \bar{\mathbf{d}}_p$ and the input $f(s)$. Across 9,432 triples, mean $\cos(\text{result}, \text{head}) = 0.860$. The binding requirement (Plate, 2003) demands $\cos(\text{result}, \text{input}) \approx 0$ (dissimilarity). Our operations produce results *highly similar* to their inputs — definitively bundling, not binding. All 188 tested predicates were classified as bundling.
-
-**Experiment: Addition vs. multiplication.** We compared additive displacement (our method) against element-wise multiplication (the binding operation in MAP-style VSA). Across 30 consistent predicates with leave-one-out evaluation, addition achieved mean MRR 0.464 vs. multiplication's 0.022. Addition outperformed multiplication on 29 of 30 predicates. The embedding space's relational structure is accessed through additive superposition, not multiplicative binding.
-
-**Experiment: Angular operations.** Since mxbai-embed-large produces L2-normalized embeddings ($\|v\| = 1.0000$), all vectors lie on the unit hypersphere. FHRR, a VSA variant that performs binding via angle addition in complex space, operates in exactly this angular domain. The normalization means our additive operations are equivalent to angular operations on the hypersphere — the FHRR bridge holds trivially for this model.
-
-These results position our work within the VSA framework: frozen text embeddings encode relational structure as *bundled superpositions*, not bound composites. The success/failure pattern we observe — functional relations produce consistent displacements, symmetric relations do not — is predicted by VSA theory, since bundling is commutative ($A + B = B + A$) and therefore cannot encode directional asymmetry. This connection to VSA is observational: we identify which VSA-like operations the embedding space already supports, rather than constructing a VSA system.
-
-**A note on the KGE–VSA correspondence.** The mathematical parallels between knowledge graph embedding methods and VSA variants are intuitive once stated, and we outline them here for reference:
-
-| KGE Method | Operation | VSA Parallel | Notes |
-|-----------|-----------|-------------|-------|
-| TransE (Bordes et al., 2013) | $\|h + r - t\|$ | Bundling (addition) | Cannot model symmetric relations — consistent with bundling's commutativity |
-| RotatE (Sun et al., 2019) | $\|h \circ r - t\|$ (complex) | FHRR binding (Plate, 2003) | Element-wise rotation in complex space = FHRR's angle addition on unit phasors |
-| HolE (Nickel et al., 2016) | Circular correlation scoring | HRR binding (Plate, 1995) | Explicitly named after Plate's Holographic Reduced Representations |
-| DistMult (Yang et al., 2015) | $h \circ r \circ t$ (element-wise) | MAP binding (Gayler, 2003) | Element-wise real multiplication = MAP's binding operation |
-| ComplEx (Trouillon et al., 2016) | $\text{Re}(h \circ r \circ \bar{t})$ | ≈ FHRR binding | Hayashi & Shimbo (2017) proved ComplEx = HolE via Fourier transform, implicitly connecting to FHRR |
-
-Of these, only one link is explicit in the literature: Nickel et al. (2016) named HolE after Plate's (1995) Holographic Reduced Representations and cited it directly. Hayashi & Shimbo (2017) proved HolE and ComplEx are mathematically equivalent via the Fourier transform, which implicitly connects ComplEx to FHRR — though they did not use VSA vocabulary. The remaining correspondences (TransE to bundling, RotatE to FHRR, DistMult to MAP) appear not to have been formally published: the comprehensive VSA surveys (Kleyko et al., 2023; Schlegel et al., 2022) do not discuss KGE methods, and the KGE literature does not reference VSA. The two communities have developed in parallel with minimal cross-citation despite working with the same mathematical structures. We note this correspondence here as an observation that may be useful for both communities, while acknowledging that the individual mathematical equivalences are straightforward to verify once stated.
-
-### 5.6 Practical Implications (of the Tokenizer Defect)
+### 5.5 Practical Implications
 
 The `[UNK]` token dominance defect has immediate practical consequences. Any system using mxbai-embed-large for semantic search, RAG, or knowledge graph completion over non-ASCII text has been silently affected. A user querying "Hokkaidō" will retrieve results from the `[UNK]` attractor region — potentially returning "Éire", "Djazaïr", or any other diacritical string — rather than results related to the Japanese island. The failure is silent: the model returns a valid-looking 1024-dimensional vector, and no error is raised.
 
 We hypothesize that this class of silent failure extends beyond mxbai-embed-large. All three models tested use WordPiece or similar subword tokenizers, and the `[UNK]` token dominance mechanism applies to any tokenizer with incomplete character coverage. The practical recommendation is to test embedding models with diacritic-rich input before deployment, and to prefer models with byte-level tokenizers (e.g., CANINE, ByT5) or SentencePiece with full Unicode coverage for multilingual applications.
 
-### 5.7 Limitations
+### 5.6 Limitations
 
 1. **Three embedding models.** We validate across mxbai-embed-large (1024-dim), nomic-embed-text (768-dim), and all-minilm (384-dim), finding 30 universal relations. All three are English-language text embedding models trained on similar corpora. Testing on multilingual models or domain-specific models (e.g., biomedical) would further characterize the generality of the three-regime structure.
 
@@ -422,17 +398,9 @@ Conneau, A., Kruszewski, G., Lample, G., Barrault, L., & Baroni, M. (2018). What
 
 Ethayarajh, K., Duvenaud, D., & Hirst, G. (2019). Towards understanding linear word analogies. *ACL*.
 
-Gayler, R. W. (2003). Vector Symbolic Architectures answer Jackendoff's challenges for cognitive science. *ICCS/ASCS Joint Conference*.
-
-Hayashi, K., & Shimbo, M. (2017). On the equivalence of holographic and complex embeddings for link prediction. *ACL*.
-
 Hewitt, J., & Manning, C. D. (2019). A structural probe for finding syntax in word representations. *NAACL*.
 
-Kanerva, P. (2009). Hyperdimensional computing: An introduction to computing in distributed representation with high-dimensional random vectors. *Cognitive Computation*, 1(2), 139–159.
-
 Kazemi, S. M., & Poole, D. (2018). SimplE embedding for link prediction in knowledge graphs with baseline model comparison. *NeurIPS*.
-
-Kleyko, D., et al. (2023). A survey on hyperdimensional computing: Theory, architecture, and applications. *ACM Computing Surveys*, 55(6), 1–40.
 
 
 Li, Y., Liu, Y., Deng, G., Zhang, Y., & Song, W. (2024). Glitch Tokens in Large Language Models: Categorization Taxonomy and Effective Detection. *Proceedings of the ACM on Software Engineering*, 1(FSE). https://doi.org/10.1145/3660799
@@ -445,15 +413,7 @@ Manhaeve, R., Dumančić, S., Kimmig, A., Demeester, T., & De Raedt, L. (2018). 
 
 Mikolov, T., Sutskever, I., Chen, K., Corrado, G. S., & Dean, J. (2013). Distributed representations of words and phrases and their compositionality. *NeurIPS*.
 
-Nickel, M., Rosasco, L., & Poggio, T. (2016). Holographic embeddings of knowledge graphs. *AAAI*.
-
-Plate, T. A. (1995). Holographic reduced representations. *IEEE Transactions on Neural Networks*, 6(3), 623–641.
-
-Plate, T. A. (2003). *Holographic Reduced Representations*. CSLI Publications.
-
 Rocktäschel, T., & Riedel, S. (2017). End-to-end differentiable proving. *NeurIPS*.
-
-Schlegel, K., et al. (2022). A comparison of vector symbolic architectures. *Artificial Intelligence Review*, 51, 4523–4560.
 
 Rogers, A., Drozd, A., & Li, B. (2017). The (too many) problems of analogical reasoning with word vectors. *StarSem*.
 
@@ -474,5 +434,3 @@ Trouillon, T., Welbl, J., Riedel, S., Gaussier, É., & Bouchard, G. (2016). Comp
 Vilnis, L., Li, X., Xiang, S., & McCallum, A. (2018). Probabilistic embedding of knowledge graphs with box lattice measures. *ACL*.
 
 Wang, Z., Zhang, J., Feng, J., & Chen, Z. (2014). Knowledge graph embedding by translating on hyperplanes. *AAAI*.
-
-Yang, B., Yih, W., He, X., Gao, J., & Deng, L. (2015). Embedding entities and relations for learning and inference in knowledge bases. *ICLR*.
