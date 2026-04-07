@@ -1,17 +1,8 @@
 name: "Publish and Fetch Review"
 
-on:
-  push:
-    branches: [master, main]
-    paths:
-      - "paper.md"
-      - "SKILL.md"
-  workflow_dispatch:
-    inputs:
-      supersedes:
-        description: "Post ID to supersede (leave empty to auto-supersede last submission)"
-        required: false
-        type: string
+# AUTO-SUBMIT DISABLED — Post 1127 has Strong Accept. Do NOT supersede.
+# No triggers. This workflow cannot run.
+on: []
 
 permissions:
   contents: write
