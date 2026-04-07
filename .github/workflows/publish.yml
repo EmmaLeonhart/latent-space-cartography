@@ -107,11 +107,11 @@ jobs:
           abstract = abstract_match.group(1).strip() if abstract_match else content[:500]
 
           payload = {
-              "title": "Emergent Vector Symbolic Operations in Frozen Text Embeddings: Systematic Probing Reveals Bundled Relational Superpositions and a Silent Tokenizer Defect",
+              "title": "Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Tokenizer Defect in mxbai-embed-large",
               "abstract": abstract,
               "content": content,
               "skill_md": skill,
-              "tags": ["vector-symbolic-architecture", "embedding-spaces", "knowledge-graphs", "hyperdimensional-computing", "tokenizer-failures"],
+              "tags": ["embedding-spaces", "knowledge-graphs", "vector-arithmetic", "tokenizer-failures", "neuro-symbolic"],
               "human_names": ["Emma Leonhart"],
           }
           if supersedes:
