@@ -18,7 +18,7 @@ Applies standard TransE-style relational displacement analysis to **frozen** tex
 
 1. **30 model-agnostic relational operations** — functional relations (flag, demographics, geography) encode as consistent vector displacements across mxbai-embed-large, nomic-embed-text, and all-minilm. Symmetric relations (sibling, spouse) do not. Self-diagnostic correlation r = 0.861 (95% CI [0.773, 0.926]).
 
-2. **Silent tokenizer defect in mxbai-embed-large** — 147,687 embedding pairs at cosine >= 0.95, caused by WordPiece `[UNK]` token dominance on diacritical text. "Hokkaidō" has cosine 1.0 with "Éire" but 0.45 with "Hokkaido".
+2. **Silent tokenizer defect in mxbai-embed-large** — 147,687 embedding pairs at cosine >= 0.95, caused by WordPiece `[UNK]` token dominance on diacritical text. "Hokkaidō" has cosine 1.0 with "Éire" but 0.45 with "Hokkaido". **[Interactive explainer with graphs](https://emmaleonhart.github.io/latent-space-cartography/)**
 
 ## Quick Demo: Tokenizer Defect
 
