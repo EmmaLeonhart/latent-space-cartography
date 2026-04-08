@@ -1,6 +1,6 @@
 data/
 data-nomic/
 data-minilm/
-figures/
+/figures/
 __pycache__/
 *.pyc
