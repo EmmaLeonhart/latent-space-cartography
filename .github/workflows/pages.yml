@@ -5,13 +5,10 @@ on:
     branches: [master, main]
     paths:
       - "docs/**"
-      - "scripts/generate_defect_page.py"
-  schedule:
-    - cron: "0 6 * * *"  # Daily at 06:00 UTC
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -20,46 +17,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  generate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install numpy matplotlib
-
-      - name: Install Ollama
-        run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
-          sleep 5
-          ollama pull mxbai-embed-large
-
-      - name: Generate figures and page
-        run: python scripts/generate_defect_page.py --live
-
-      - name: Commit updated figures
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/
-          git diff --staged --quiet || git commit -m "Update defect page figures [auto]"
-          git push
-
   deploy:
-    needs: generate
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: master
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
