@@ -50,26 +50,77 @@ USER_AGENT = (
 )
 COLLISION_THRESHOLD = 0.95
 
-# Diacritical sample: human settlements per country, taking labels in
-# the local language. Settlements-per-country is a small enough
-# namespace to query without hitting the Wikidata 60s timeout, and
-# native-language city/village names almost always contain the diacritic
-# characters we care about. Humans-per-country (the obvious first
-# choice) hits millions of results and 504s on anything large.
+# Diacritical sample: we now actively hunt for entities whose ENGLISH
+# label contains a diacritic, across several entity classes (people,
+# settlements, rivers, mountains, administrative divisions). Using the
+# English label is more realistic — it's what a real user querying
+# Wikidata would embed — and it proves the defect isn't an artifact of
+# pulling native-language strings. The SPARQL REGEX filter
+# [À-ɏḀ-ỹ] covers Latin-1 supplement (U+00C0-00FF), Latin Extended-A
+# (U+0100-017F), Latin Extended-B (U+0180-024F), and Latin Extended
+# Additional (U+1E00-1EF9) — enough to hit every European alphabet and
+# Vietnamese.
+#
+# Each query pins both an entity class and a country/context so the
+# result set stays small enough that Wikidata doesn't 504.
 DIACRITIC_QUERIES = [
-    # (description, country QID, label language tag)
-    ("Czech settlements",       "Q213", "cs"),
-    ("Polish settlements",      "Q36",  "pl"),
-    ("Vietnamese settlements",  "Q881", "vi"),
-    ("German settlements",      "Q183", "de"),
-    ("French settlements",      "Q142", "fr"),
-    ("Romanian settlements",    "Q218", "ro"),
-    ("Hungarian settlements",   "Q28",  "hu"),
-    ("Turkish settlements",     "Q43",  "tr"),
-    ("Slovak settlements",      "Q214", "sk"),
-    ("Portuguese settlements",  "Q45",  "pt"),
-    ("Spanish settlements",     "Q29",  "es"),
-    ("Icelandic settlements",   "Q189", "is"),
+    # (description, SPARQL WHERE-body)
+    ("Czech humans", """
+        ?item wdt:P31 wd:Q5 .
+        ?item wdt:P27 wd:Q213 .
+    """),
+    ("Polish humans", """
+        ?item wdt:P31 wd:Q5 .
+        ?item wdt:P27 wd:Q36 .
+    """),
+    ("Vietnamese humans", """
+        ?item wdt:P31 wd:Q5 .
+        ?item wdt:P27 wd:Q881 .
+    """),
+    ("French humans", """
+        ?item wdt:P31 wd:Q5 .
+        ?item wdt:P27 wd:Q142 .
+    """),
+    ("German humans", """
+        ?item wdt:P31 wd:Q5 .
+        ?item wdt:P27 wd:Q183 .
+    """),
+    ("Spanish humans", """
+        ?item wdt:P31 wd:Q5 .
+        ?item wdt:P27 wd:Q29 .
+    """),
+    ("Czech settlements", """
+        ?item wdt:P31 wd:Q486972 .
+        ?item wdt:P17 wd:Q213 .
+    """),
+    ("Polish settlements", """
+        ?item wdt:P31 wd:Q486972 .
+        ?item wdt:P17 wd:Q36 .
+    """),
+    ("Vietnamese settlements", """
+        ?item wdt:P31 wd:Q486972 .
+        ?item wdt:P17 wd:Q881 .
+    """),
+    ("French settlements", """
+        ?item wdt:P31 wd:Q486972 .
+        ?item wdt:P17 wd:Q142 .
+    """),
+    ("Romanian settlements", """
+        ?item wdt:P31 wd:Q486972 .
+        ?item wdt:P17 wd:Q218 .
+    """),
+    ("Hungarian settlements", """
+        ?item wdt:P31 wd:Q486972 .
+        ?item wdt:P17 wd:Q28 .
+    """),
+    ("Rivers of France", """
+        ?item wdt:P31/wdt:P279* wd:Q4022 .
+        ?item wdt:P17 wd:Q142 .
+    """),
+    ("Rivers of Germany", """
+        ?item wdt:P31/wdt:P279* wd:Q4022 .
+        ?item wdt:P17 wd:Q183 .
+    """),
 ]
 
 # ASCII control: English-labelled settlements in English-speaking
@@ -77,10 +128,23 @@ DIACRITIC_QUERIES = [
 ASCII_CONTROL = ("UK / US / AU / NZ settlements (ASCII-only en labels)",
                  ["Q145", "Q30", "Q408", "Q664"], "en")
 
-PER_QUERY_LIMIT = 120   # ~12 * 120 = ~1440 candidates before ASCII filter
+# Sentence-level test: for each entity, embed the English label on its
+# own AND embed a templated sentence that puts the label in an ASCII
+# context. If the defect is purely tokenizer-level, sentences with
+# different diacritical subjects should STILL collide because the
+# surrounding ASCII tokens are identical — we're just testing whether
+# the [UNK] hole in the input damages the mean-pooled vector even when
+# most tokens are well-defined.
+SENTENCE_TEMPLATE = "The entity {label} is described in the knowledge base."
+
+PER_QUERY_LIMIT = 80    # 15 × 80 = 1200 candidate cap per group
 CONTROL_FETCH = 300     # over-fetch, then filter to ASCII-only
 BATCH_SIZE = 32         # Ollama embedding batch size
 SPARQL_RETRIES = 2      # per-query retries on transient failures
+
+# SPARQL regex matching Latin-1 supplement, Latin Extended-A, B, and
+# Latin Extended Additional — covers every diacritic we care about.
+DIACRITIC_REGEX = "[À-ɏḀ-ỹ]"
 
 
 # ── SPARQL ────────────────────────────────────────────────────────────────
@@ -109,20 +173,18 @@ def sparql(query: str) -> list[dict]:
     raise last_err if last_err else RuntimeError("SPARQL failed")
 
 
-def fetch_settlements_from_country(country_qid: str, lang: str, limit: int) -> list[tuple[str, str]]:
-    """Fetch human settlements in a country, taking labels in the given language.
-
-    No ORDER BY — on large namespaces Wikidata's query planner forces a
-    full enumeration before sorting and times out at 60s. The collision
-    statistics are robust to which specific settlements get sampled, so
-    we accept whatever set the query service returns first.
+def fetch_diacritic_entities(where_body: str, limit: int) -> list[tuple[str, str]]:
+    """Fetch entities matching a WHERE-body constraint whose English
+    label contains a diacritic. The SPARQL REGEX filter enforces the
+    diacritic requirement server-side so we never waste a slot on an
+    anglicised spelling.
     """
     query = f"""
     SELECT DISTINCT ?item ?label WHERE {{
-      ?item wdt:P31 wd:Q486972 .
-      ?item wdt:P17 wd:{country_qid} .
+      {where_body}
       ?item rdfs:label ?label .
-      FILTER(LANG(?label) = "{lang}")
+      FILTER(LANG(?label) = "en")
+      FILTER(REGEX(STR(?label), "{DIACRITIC_REGEX}"))
     }}
     LIMIT {limit}
     """
@@ -269,26 +331,38 @@ def main() -> None:
     print("Wikidata Collision Scan — mxbai-embed-large [UNK] defect")
     print("=" * 72)
 
-    # 1. Pull diacritical sample
-    print("\n[1/4] Fetching diacritical sample from Wikidata SPARQL")
+    # 1. Pull diacritical sample — SPARQL REGEX-filters for diacritics
+    # directly, across many entity classes, so the sample is always
+    # something with diacritics in its English label.
+    print("\n[1/5] Hunting diacritical entities via Wikidata SPARQL regex")
     diacritical: list[tuple[str, str]] = []
-    for desc, country, lang in DIACRITIC_QUERIES:
+    for desc, where_body in DIACRITIC_QUERIES:
         print(f"  {desc}…", end=" ", flush=True)
         try:
-            rows = fetch_settlements_from_country(country, lang, PER_QUERY_LIMIT)
+            rows = fetch_diacritic_entities(where_body, PER_QUERY_LIMIT)
         except Exception as exc:
             print(f"FAILED ({exc})")
             continue
-        # Only keep rows whose label actually contains non-ASCII
+        # Belt-and-braces: SPARQL regex should have caught all of
+        # these, but confirm with a Python check so stray ASCII-only
+        # rows can't poison the stats.
         rows = [(q, l) for q, l in rows if not is_ascii(l)]
         diacritical.extend(rows)
-        print(f"{len(rows)} non-ASCII labels")
-        time.sleep(1.0)  # polite to the query service
+        print(f"{len(rows)} labels")
+        time.sleep(1.0)
 
-    print(f"\n  → {len(diacritical)} diacritical entities collected")
+    # Deduplicate on QID (an entity might satisfy two query classes).
+    seen_qids: set[str] = set()
+    deduped: list[tuple[str, str]] = []
+    for q, l in diacritical:
+        if q not in seen_qids:
+            seen_qids.add(q)
+            deduped.append((q, l))
+    diacritical = deduped
+    print(f"\n  → {len(diacritical)} unique diacritical entities collected")
 
     # 2. Pull ASCII control
-    print("\n[2/4] Fetching ASCII control from Wikidata SPARQL")
+    print("\n[2/5] Fetching ASCII control from Wikidata SPARQL")
     desc, countries, lang = ASCII_CONTROL
     print(f"  {desc}…", end=" ", flush=True)
     try:
@@ -306,25 +380,39 @@ def main() -> None:
         print(f"\nFAIL: only {len(control)} control entities collected; need ≥50")
         sys.exit(1)
 
-    # 3. Embed both groups
-    print("\n[3/4] Embedding labels via Ollama + mxbai-embed-large")
+    # 3. Embed both groups — labels AND templated sentences
+    print("\n[3/5] Embedding labels via Ollama + mxbai-embed-large")
 
     d_qids = [q for q, _ in diacritical]
     d_labels = [l for _, l in diacritical]
-    d_vecs = embed_all(d_labels, "diacritical")
+    d_vecs = embed_all(d_labels, "diacritical-label")
 
     c_qids = [q for q, _ in control]
     c_labels = [l for _, l in control]
-    c_vecs = embed_all(c_labels, "control")
+    c_vecs = embed_all(c_labels, "ascii-label")
 
-    # 4. Collision stats
-    print("\n[4/4] Computing pairwise collision statistics")
-    d_stats = collision_stats(d_vecs, d_qids, d_labels, "diacritical")
-    c_stats = collision_stats(c_vecs, c_qids, c_labels, "ascii_control")
+    print("\n[4/5] Embedding sentence-level versions (same template, "
+          "different diacritical subject)")
+    d_sentences = [SENTENCE_TEMPLATE.format(label=l) for l in d_labels]
+    c_sentences = [SENTENCE_TEMPLATE.format(label=l) for l in c_labels]
+    d_sent_vecs = embed_all(d_sentences, "diacritical-sentence")
+    c_sent_vecs = embed_all(c_sentences, "ascii-sentence")
+
+    # 5. Collision stats
+    print("\n[5/5] Computing pairwise collision statistics")
+    d_stats = collision_stats(d_vecs, d_qids, d_labels, "diacritical_labels")
+    c_stats = collision_stats(c_vecs, c_qids, c_labels, "ascii_control_labels")
+
+    d_sent_stats = collision_stats(
+        d_sent_vecs, d_qids, d_sentences, "diacritical_sentences"
+    )
+    c_sent_stats = collision_stats(
+        c_sent_vecs, c_qids, c_sentences, "ascii_control_sentences"
+    )
 
     # Cross-group: every diacritical vs every ASCII control. Different
     # QID sets so all pairs are cross-entity by construction.
-    print("  cross-group (diacritical × ASCII control)…")
+    print("  cross-group (diacritical × ASCII control, labels)…")
     d_norm = d_vecs / np.clip(np.linalg.norm(d_vecs, axis=1, keepdims=True), 1e-9, None)
     c_norm = c_vecs / np.clip(np.linalg.norm(c_vecs, axis=1, keepdims=True), 1e-9, None)
     cross_sim = d_norm @ c_norm.T
@@ -335,9 +423,16 @@ def main() -> None:
     summary = {
         "model": MODEL,
         "threshold": COLLISION_THRESHOLD,
-        "diacritical": d_stats,
-        "ascii_control": c_stats,
-        "cross_group": {
+        "sentence_template": SENTENCE_TEMPLATE,
+        "labels": {
+            "diacritical": d_stats,
+            "ascii_control": c_stats,
+        },
+        "sentences": {
+            "diacritical": d_sent_stats,
+            "ascii_control": c_sent_stats,
+        },
+        "cross_group_labels": {
             "pairs": cross_total,
             "collisions": cross_hits,
             "collision_rate": round(cross_hits / cross_total, 4) if cross_total else 0.0,
@@ -350,35 +445,45 @@ def main() -> None:
     def pct(x: float) -> str:
         return f"{x * 100:.1f}%"
 
+    def print_group(title: str, s: dict) -> None:
+        print(f"\n{title}  ({s['n_entities']} entities)")
+        print(f"  cross-entity pairs:  {s['total_cross_entity_pairs']:,}")
+        print(f"  collisions ≥ {COLLISION_THRESHOLD}: {s['collision_count']:,}")
+        print(f"  collision rate:      {pct(s['collision_rate'])}")
+        print(f"  mean pairwise cos:   {s['mean_cosine']:.3f}")
+
     print("\n" + "=" * 72)
-    print("SUMMARY")
+    print("SUMMARY — LABEL LEVEL (just the entity name)")
     print("=" * 72)
-
-    print(f"\nDiacritical group  ({d_stats['n_entities']} entities)")
-    print(f"  cross-entity pairs:  {d_stats['total_cross_entity_pairs']:,}")
-    print(f"  collisions ≥ {COLLISION_THRESHOLD}: {d_stats['collision_count']:,}")
-    print(f"  collision rate:      {pct(d_stats['collision_rate'])}")
-    print(f"  mean pairwise cos:   {d_stats['mean_cosine']:.3f}")
-
-    print(f"\nASCII control group ({c_stats['n_entities']} entities)")
-    print(f"  cross-entity pairs:  {c_stats['total_cross_entity_pairs']:,}")
-    print(f"  collisions ≥ {COLLISION_THRESHOLD}: {c_stats['collision_count']:,}")
-    print(f"  collision rate:      {pct(c_stats['collision_rate'])}")
-    print(f"  mean pairwise cos:   {c_stats['mean_cosine']:.3f}")
-
-    print(f"\nCross-group (diacritical × control)")
+    print_group("Diacritical labels", d_stats)
+    print_group("ASCII control labels", c_stats)
+    print(f"\nCross-group labels (diacritical × ASCII control)")
     print(f"  pairs:               {cross_total:,}")
     print(f"  collisions ≥ {COLLISION_THRESHOLD}: {cross_hits:,}")
     print(f"  mean pairwise cos:   {cross_mean:.3f}")
 
+    print("\n" + "=" * 72)
+    print("SUMMARY — SENTENCE LEVEL (label wrapped in ASCII context)")
+    print("=" * 72)
+    print(f'Template: "{SENTENCE_TEMPLATE}"')
+    print_group("Diacritical sentences", d_sent_stats)
+    print_group("ASCII control sentences", c_sent_stats)
+
     if d_stats["top_collisions"]:
-        print("\nExample colliding pairs (diacritical group, top by cosine):")
+        print("\nExample colliding LABELS (top by cosine):")
         for hit in d_stats["top_collisions"][:10]:
             print(
                 f"  {hit['cosine']:.4f}  "
                 f"{hit['qid_a']:>10} {hit['label_a'][:30]:<32}"
                 f"{hit['qid_b']:>10} {hit['label_b'][:30]}"
             )
+
+    if d_sent_stats["top_collisions"]:
+        print("\nExample colliding SENTENCES (top by cosine):")
+        for hit in d_sent_stats["top_collisions"][:5]:
+            print(f"  {hit['cosine']:.4f}")
+            print(f"    A: {hit['label_a'][:80]}")
+            print(f"    B: {hit['label_b'][:80]}")
 
     SUMMARY_PATH.write_text(
         json.dumps(summary, indent=2, ensure_ascii=False) + "\n",
