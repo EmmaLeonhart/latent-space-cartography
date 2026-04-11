@@ -1,8 +1,11 @@
 name: "Publish and Fetch Review"
 
 # AUTO-SUBMIT DISABLED — Post 1127 has Strong Accept. Do NOT supersede.
-# No triggers. This workflow cannot run.
-on: []
+# Manual-only dispatch so the workflow validates cleanly on every push
+# without actually running. Previously `on: []` which GitHub enqueues
+# and fails as an invalid triggers list on every push.
+on:
+  workflow_dispatch:
 
 permissions:
   contents: write

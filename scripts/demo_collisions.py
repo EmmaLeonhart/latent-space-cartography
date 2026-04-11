@@ -96,14 +96,22 @@ def main():
         sim = cosine_sim(text_to_vec[text_a], text_to_vec[text_b])
         rows.append((category, text_a, text_b, sim))
 
-    rows.sort(key=lambda r: -r[3])
+    # Stable sort: primary by descending similarity, then by text for
+    # deterministic tie-breaks. Matters because ties at 1.000 are common.
+    rows.sort(key=lambda r: (-r[3], r[0], r[1], r[2]))
 
+    # Round to 3 decimals before serialisation so that Ollama's run-to-run
+    # FP jitter (~1e-4 from non-deterministic batching) doesn't produce a
+    # different CSV every time the cron fires. 3 decimals is still more
+    # than enough to distinguish a collision (>=0.95) from a non-collision.
+    # LF line terminator forced so the file is byte-stable across Windows
+    # local commits and the Ubuntu CI runner.
     with open(OUTPUT, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["category", "text_a", "text_b", "cosine_similarity", "collision"])
         for category, text_a, text_b, sim in rows:
             collision = "YES" if sim >= 0.95 else "no"
-            w.writerow([category, text_a, text_b, f"{sim:.6f}", collision])
+            w.writerow([category, text_a, text_b, f"{sim:.3f}", collision])
 
     print(f"\nResults written to {OUTPUT}\n")
     print(f"{'Category':<20} {'Text A':<16} {'Text B':<18} {'Cosine':>8}  Collision?")
