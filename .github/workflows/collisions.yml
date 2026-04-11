@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: collisions
@@ -34,8 +34,6 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
@@ -66,22 +64,60 @@ jobs:
 
       - name: Show result
         run: |
-          echo "=== collisions.csv ==="
+          echo "=== collisions.csv (freshly generated) ==="
           cat collisions.csv
-          echo ""
-          echo "=== Summary ==="
-          COLLISIONS=$(awk -F, 'NR>1 && $5=="YES"' collisions.csv | wc -l)
-          TOTAL=$(awk -F, 'NR>1' collisions.csv | wc -l)
-          echo "${COLLISIONS}/${TOTAL} pairs collide at cosine >= 0.95"
 
-      - name: Commit collisions.csv if changed
+      - name: Verify defect is still present
         run: |
-          if git diff --quiet collisions.csv 2>/dev/null; then
-            echo "collisions.csv unchanged — defect is stable (as expected)"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add collisions.csv
-            git commit -m "Refresh collisions.csv from scheduled mxbai run"
-            git push
-          fi
+          # This is the core assertion. We DO NOT auto-commit the CSV,
+          # because Ollama's embedding pipeline has ~1e-4 run-to-run
+          # jitter that can flip values sitting near rounding boundaries
+          # and produce daily noise-commits. What actually matters is the
+          # set of (text_a, text_b) pairs that cross the 0.95 collision
+          # threshold. If that set changes, the mxbai defect has finally
+          # been fixed (or regressed) and a human should look.
+
+          python - <<'PY'
+          import csv, sys
+
+          EXPECTED_COLLISIONS = {
+              ("cross_collision", "Aikanã", "kugyō"),
+              ("cross_collision", "Djazaïr", "Éire"),
+              ("cross_collision", "Filasṭīn", "Jinmyōchō"),
+              ("cross_collision", "Filasṭīn", "Éire"),
+              ("cross_collision", "Hokkaidō", "Jinmyōchō"),
+              ("cross_collision", "Hokkaidō", "Shōtai"),
+              ("cross_collision", "Hokkaidō", "Éire"),
+              ("cross_collision", "Jinmyōchō", "kugyō"),
+              ("cross_collision", "Shōtoku", "Jinmyōchō"),
+              ("cross_collision", "Shōtoku", "România"),
+              ("cross_collision", "kugyō", "Djazaïr"),
+              ("cross_collision", "naïve", "Zürich"),
+          }
+
+          with open("collisions.csv", encoding="utf-8") as f:
+              rows = list(csv.DictReader(f))
+
+          actual_collisions = {
+              (r["category"], r["text_a"], r["text_b"])
+              for r in rows
+              if r["collision"] == "YES"
+          }
+
+          total = len(rows)
+          print(f"{len(actual_collisions)}/{total} pairs collide at cosine >= 0.95")
+
+          missing = EXPECTED_COLLISIONS - actual_collisions
+          unexpected = actual_collisions - EXPECTED_COLLISIONS
+
+          if missing:
+              print(f"FAIL: expected collisions that did not fire: {missing}")
+          if unexpected:
+              print(f"FAIL: unexpected new collisions: {unexpected}")
+
+          if missing or unexpected:
+              print("The mxbai defect set has changed — investigate.")
+              sys.exit(1)
+
+          print("✓ Defect is still present, all 12 expected collisions fired.")
+          PY
