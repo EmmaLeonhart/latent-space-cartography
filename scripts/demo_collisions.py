@@ -100,18 +100,26 @@ def main():
     # deterministic tie-breaks. Matters because ties at 1.000 are common.
     rows.sort(key=lambda r: (-r[3], r[0], r[1], r[2]))
 
-    # Round to 3 decimals before serialisation so that Ollama's run-to-run
-    # FP jitter (~1e-4 from non-deterministic batching) doesn't produce a
-    # different CSV every time the cron fires. 3 decimals is still more
-    # than enough to distinguish a collision (>=0.95) from a non-collision.
-    # LF line terminator forced so the file is byte-stable across Windows
-    # local commits and the Ubuntu CI runner.
+    # Ollama's embedding pipeline has ~1e-4 non-determinism in cosine
+    # values across runs (batching / attention implementation). If we
+    # serialise at 3 decimals, values near a rounding boundary like
+    # 0.5005 flip between 0.500 and 0.501 between runs and the cron
+    # auto-commits noise every day. Fix: truncate (floor) to 2 decimals
+    # instead of rounding. Truncation has no boundary-flip problem —
+    # crossing a bucket requires the full 0.01 shift, two orders of
+    # magnitude larger than Ollama's jitter. 2 decimals is still more
+    # than enough to distinguish a collision (>=0.95) from a control.
+    # LF line terminator forced so the file is byte-stable across
+    # Windows local commits and the Ubuntu CI runner.
+    def trunc2(x):
+        return math.floor(x * 100) / 100
+
     with open(OUTPUT, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["category", "text_a", "text_b", "cosine_similarity", "collision"])
         for category, text_a, text_b, sim in rows:
             collision = "YES" if sim >= 0.95 else "no"
-            w.writerow([category, text_a, text_b, f"{sim:.3f}", collision])
+            w.writerow([category, text_a, text_b, f"{trunc2(sim):.2f}", collision])
 
     print(f"\nResults written to {OUTPUT}\n")
     print(f"{'Category':<20} {'Text A':<16} {'Text B':<18} {'Cosine':>8}  Collision?")
