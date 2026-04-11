@@ -1,0 +1,1327 @@
+{
+  "generated_at": "2026-04-11T23:38:52.435154+00:00",
+  "primary_model": "mxbai-archived",
+  "gguf_path": "model\\mxbai-embed-large-v1.gguf",
+  "hf_probe": {
+    "status": "ok",
+    "hf_model_id": "mixedbread-ai/mxbai-embed-large-v1",
+    "config": {
+      "tokenizer_class": "BertTokenizer",
+      "do_lower_case": true,
+      "strip_accents_attr": null,
+      "basic_tokenizer_do_lower_case": null,
+      "basic_tokenizer_strip_accents": null
+    },
+    "pairs": [
+      {
+        "diacritic": "Hokkaidō",
+        "ascii": "Hokkaido",
+        "diacritic_tokens": [
+          "hokkaido"
+        ],
+        "ascii_tokens": [
+          "hokkaido"
+        ],
+        "diacritic_ids": [
+          20826
+        ],
+        "ascii_ids": [
+          20826
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "Éire",
+        "ascii": "Eire",
+        "diacritic_tokens": [
+          "e",
+          "##ire"
+        ],
+        "ascii_tokens": [
+          "e",
+          "##ire"
+        ],
+        "diacritic_ids": [
+          1041,
+          7442
+        ],
+        "ascii_ids": [
+          1041,
+          7442
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "Zürich",
+        "ascii": "Zurich",
+        "diacritic_tokens": [
+          "zurich"
+        ],
+        "ascii_tokens": [
+          "zurich"
+        ],
+        "diacritic_ids": [
+          10204
+        ],
+        "ascii_ids": [
+          10204
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "café",
+        "ascii": "cafe",
+        "diacritic_tokens": [
+          "cafe"
+        ],
+        "ascii_tokens": [
+          "cafe"
+        ],
+        "diacritic_ids": [
+          7668
+        ],
+        "ascii_ids": [
+          7668
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "Dvořák",
+        "ascii": "Dvorak",
+        "diacritic_tokens": [
+          "d",
+          "##vor",
+          "##ak"
+        ],
+        "ascii_tokens": [
+          "d",
+          "##vor",
+          "##ak"
+        ],
+        "diacritic_ids": [
+          1040,
+          14550,
+          4817
+        ],
+        "ascii_ids": [
+          1040,
+          14550,
+          4817
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "naïve",
+        "ascii": "naive",
+        "diacritic_tokens": [
+          "naive"
+        ],
+        "ascii_tokens": [
+          "naive"
+        ],
+        "diacritic_ids": [
+          15743
+        ],
+        "ascii_ids": [
+          15743
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "São Paulo",
+        "ascii": "Sao Paulo",
+        "diacritic_tokens": [
+          "sao",
+          "paulo"
+        ],
+        "ascii_tokens": [
+          "sao",
+          "paulo"
+        ],
+        "diacritic_ids": [
+          7509,
+          9094
+        ],
+        "ascii_ids": [
+          7509,
+          9094
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "Malmö",
+        "ascii": "Malmo",
+        "diacritic_tokens": [
+          "malmo"
+        ],
+        "ascii_tokens": [
+          "malmo"
+        ],
+        "diacritic_ids": [
+          23643
+        ],
+        "ascii_ids": [
+          23643
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "Gdańsk",
+        "ascii": "Gdansk",
+        "diacritic_tokens": [
+          "gdansk"
+        ],
+        "ascii_tokens": [
+          "gdansk"
+        ],
+        "diacritic_ids": [
+          21942
+        ],
+        "ascii_ids": [
+          21942
+        ],
+        "ids_identical": true
+      },
+      {
+        "diacritic": "Łódź",
+        "ascii": "Lodz",
+        "diacritic_tokens": [
+          "łodz"
+        ],
+        "ascii_tokens": [
+          "lo",
+          "##d",
+          "##z"
+        ],
+        "diacritic_ids": [
+          17814
+        ],
+        "ascii_ids": [
+          8840,
+          2094,
+          2480
+        ],
+        "ids_identical": false
+      }
+    ],
+    "accent_stripping_active": false
+  },
+  "ollama_primary": {
+    "status": "ok",
+    "model": "mxbai-archived",
+    "model_info": {
+      "family": "bert",
+      "families": [
+        "bert"
+      ],
+      "parameter_size": "334.09M",
+      "quantization_level": "F16",
+      "format": "gguf"
+    },
+    "same_word_sims": [
+      {
+        "diacritic": "Hokkaidō",
+        "ascii": "Hokkaido",
+        "cosine": 0.4499578877548181
+      },
+      {
+        "diacritic": "Éire",
+        "ascii": "Eire",
+        "cosine": 0.4751478587226707
+      },
+      {
+        "diacritic": "Zürich",
+        "ascii": "Zurich",
+        "cosine": 0.48762571684044137
+      },
+      {
+        "diacritic": "café",
+        "ascii": "cafe",
+        "cosine": 0.5096541112814897
+      },
+      {
+        "diacritic": "Dvořák",
+        "ascii": "Dvorak",
+        "cosine": 0.5080249658936474
+      },
+      {
+        "diacritic": "naïve",
+        "ascii": "naive",
+        "cosine": 0.502008239232572
+      },
+      {
+        "diacritic": "São Paulo",
+        "ascii": "Sao Paulo",
+        "cosine": 0.8186351728067695
+      },
+      {
+        "diacritic": "Malmö",
+        "ascii": "Malmo",
+        "cosine": 0.47748213841731957
+      },
+      {
+        "diacritic": "Gdańsk",
+        "ascii": "Gdansk",
+        "cosine": 0.44604918327813964
+      },
+      {
+        "diacritic": "Łódź",
+        "ascii": "Lodz",
+        "cosine": 0.43262081610219755
+      }
+    ],
+    "cross_diacritic_sims": [
+      {
+        "a": "Hokkaidō",
+        "b": "Éire",
+        "cosine": 1.0
+      },
+      {
+        "a": "Hokkaidō",
+        "b": "Zürich",
+        "cosine": 1.0
+      },
+      {
+        "a": "Hokkaidō",
+        "b": "café",
+        "cosine": 1.0
+      },
+      {
+        "a": "Hokkaidō",
+        "b": "Dvořák",
+        "cosine": 1.0
+      },
+      {
+        "a": "Hokkaidō",
+        "b": "naïve",
+        "cosine": 1.0
+      },
+      {
+        "a": "Hokkaidō",
+        "b": "São Paulo",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "Hokkaidō",
+        "b": "Malmö",
+        "cosine": 1.0
+      },
+      {
+        "a": "Hokkaidō",
+        "b": "Gdańsk",
+        "cosine": 1.0
+      },
+      {
+        "a": "Hokkaidō",
+        "b": "Łódź",
+        "cosine": 1.0
+      },
+      {
+        "a": "Éire",
+        "b": "Zürich",
+        "cosine": 1.0
+      },
+      {
+        "a": "Éire",
+        "b": "café",
+        "cosine": 1.0
+      },
+      {
+        "a": "Éire",
+        "b": "Dvořák",
+        "cosine": 1.0
+      },
+      {
+        "a": "Éire",
+        "b": "naïve",
+        "cosine": 1.0
+      },
+      {
+        "a": "Éire",
+        "b": "São Paulo",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "Éire",
+        "b": "Malmö",
+        "cosine": 1.0
+      },
+      {
+        "a": "Éire",
+        "b": "Gdańsk",
+        "cosine": 1.0
+      },
+      {
+        "a": "Éire",
+        "b": "Łódź",
+        "cosine": 1.0
+      },
+      {
+        "a": "Zürich",
+        "b": "café",
+        "cosine": 1.0
+      },
+      {
+        "a": "Zürich",
+        "b": "Dvořák",
+        "cosine": 1.0
+      },
+      {
+        "a": "Zürich",
+        "b": "naïve",
+        "cosine": 1.0
+      },
+      {
+        "a": "Zürich",
+        "b": "São Paulo",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "Zürich",
+        "b": "Malmö",
+        "cosine": 1.0
+      },
+      {
+        "a": "Zürich",
+        "b": "Gdańsk",
+        "cosine": 1.0
+      },
+      {
+        "a": "Zürich",
+        "b": "Łódź",
+        "cosine": 1.0
+      },
+      {
+        "a": "café",
+        "b": "Dvořák",
+        "cosine": 1.0
+      },
+      {
+        "a": "café",
+        "b": "naïve",
+        "cosine": 1.0
+      },
+      {
+        "a": "café",
+        "b": "São Paulo",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "café",
+        "b": "Malmö",
+        "cosine": 1.0
+      },
+      {
+        "a": "café",
+        "b": "Gdańsk",
+        "cosine": 1.0
+      },
+      {
+        "a": "café",
+        "b": "Łódź",
+        "cosine": 1.0
+      },
+      {
+        "a": "Dvořák",
+        "b": "naïve",
+        "cosine": 1.0
+      },
+      {
+        "a": "Dvořák",
+        "b": "São Paulo",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "Dvořák",
+        "b": "Malmö",
+        "cosine": 1.0
+      },
+      {
+        "a": "Dvořák",
+        "b": "Gdańsk",
+        "cosine": 1.0
+      },
+      {
+        "a": "Dvořák",
+        "b": "Łódź",
+        "cosine": 1.0
+      },
+      {
+        "a": "naïve",
+        "b": "São Paulo",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "naïve",
+        "b": "Malmö",
+        "cosine": 1.0
+      },
+      {
+        "a": "naïve",
+        "b": "Gdańsk",
+        "cosine": 1.0
+      },
+      {
+        "a": "naïve",
+        "b": "Łódź",
+        "cosine": 1.0
+      },
+      {
+        "a": "São Paulo",
+        "b": "Malmö",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "São Paulo",
+        "b": "Gdańsk",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "São Paulo",
+        "b": "Łódź",
+        "cosine": 0.5211517779198299
+      },
+      {
+        "a": "Malmö",
+        "b": "Gdańsk",
+        "cosine": 1.0
+      },
+      {
+        "a": "Malmö",
+        "b": "Łódź",
+        "cosine": 1.0
+      },
+      {
+        "a": "Gdańsk",
+        "b": "Łódź",
+        "cosine": 1.0
+      }
+    ],
+    "cross_control_sims": [
+      {
+        "a": "Berlin",
+        "b": "quantum physics",
+        "cosine": 0.5044449296164215
+      },
+      {
+        "a": "Berlin",
+        "b": "cat",
+        "cosine": 0.5244961548808441
+      },
+      {
+        "a": "Berlin",
+        "b": "democracy",
+        "cosine": 0.5394266765044586
+      },
+      {
+        "a": "Berlin",
+        "b": "bicycle",
+        "cosine": 0.5048427955604678
+      },
+      {
+        "a": "quantum physics",
+        "b": "cat",
+        "cosine": 0.475500650708066
+      },
+      {
+        "a": "quantum physics",
+        "b": "democracy",
+        "cosine": 0.5361614381135643
+      },
+      {
+        "a": "quantum physics",
+        "b": "bicycle",
+        "cosine": 0.4212706899390682
+      },
+      {
+        "a": "cat",
+        "b": "democracy",
+        "cosine": 0.5401304757461635
+      },
+      {
+        "a": "cat",
+        "b": "bicycle",
+        "cosine": 0.5702058104655847
+      },
+      {
+        "a": "democracy",
+        "b": "bicycle",
+        "cosine": 0.5180558522350033
+      }
+    ],
+    "stats": {
+      "diacritic_vs_ascii_same_word": {
+        "n": 10,
+        "mean": 0.5107206090330065,
+        "min": 0.43262081610219755,
+        "max": 0.8186351728067695,
+        "median": 0.48762571684044137
+      },
+      "cross_diacritic": {
+        "n": 45,
+        "mean": 0.904230355583966,
+        "min": 0.5211517779198299,
+        "max": 1.0,
+        "median": 1.0
+      },
+      "cross_control": {
+        "n": 10,
+        "mean": 0.5134535473769641,
+        "min": 0.4212706899390682,
+        "max": 0.5702058104655847,
+        "median": 0.5244961548808441
+      }
+    },
+    "divergence_active": true,
+    "failure_modes": [
+      "unk_collapse"
+    ],
+    "severity": 0.7800561991739954
+  },
+  "ollama_secondary": {
+    "nomic-embed-text": {
+      "status": "ok",
+      "model": "nomic-embed-text",
+      "model_info": {
+        "family": "nomic-bert",
+        "families": [
+          "nomic-bert"
+        ],
+        "parameter_size": "137M",
+        "quantization_level": "F16",
+        "format": "gguf"
+      },
+      "same_word_sims": [
+        {
+          "diacritic": "Hokkaidō",
+          "ascii": "Hokkaido",
+          "cosine": 1.0
+        },
+        {
+          "diacritic": "Éire",
+          "ascii": "Eire",
+          "cosine": 1.0
+        },
+        {
+          "diacritic": "Zürich",
+          "ascii": "Zurich",
+          "cosine": 1.0
+        },
+        {
+          "diacritic": "café",
+          "ascii": "cafe",
+          "cosine": 0.4704861253858801
+        },
+        {
+          "diacritic": "Dvořák",
+          "ascii": "Dvorak",
+          "cosine": 1.0
+        },
+        {
+          "diacritic": "naïve",
+          "ascii": "naive",
+          "cosine": 0.409330406276456
+        },
+        {
+          "diacritic": "São Paulo",
+          "ascii": "Sao Paulo",
+          "cosine": 0.9999999999999999
+        },
+        {
+          "diacritic": "Malmö",
+          "ascii": "Malmo",
+          "cosine": 1.0
+        },
+        {
+          "diacritic": "Gdańsk",
+          "ascii": "Gdansk",
+          "cosine": 1.0
+        },
+        {
+          "diacritic": "Łódź",
+          "ascii": "Lodz",
+          "cosine": 1.0
+        }
+      ],
+      "cross_diacritic_sims": [
+        {
+          "a": "Hokkaidō",
+          "b": "Éire",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Zürich",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "café",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Dvořák",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "São Paulo",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "Zürich",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "café",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "Dvořák",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "São Paulo",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "Éire",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "café",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "Dvořák",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "São Paulo",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "Zürich",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "Dvořák",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "São Paulo",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "café",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "Dvořák",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "Dvořák",
+          "b": "São Paulo",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "Dvořák",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "Dvořák",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Dvořák",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "naïve",
+          "b": "São Paulo",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "naïve",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "naïve",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "naïve",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "São Paulo",
+          "b": "Malmö",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "São Paulo",
+          "b": "Gdańsk",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "São Paulo",
+          "b": "Łódź",
+          "cosine": 0.9594792199443614
+        },
+        {
+          "a": "Malmö",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Malmö",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "Gdańsk",
+          "b": "Łódź",
+          "cosine": 1.0
+        }
+      ],
+      "cross_control_sims": [
+        {
+          "a": "Berlin",
+          "b": "quantum physics",
+          "cosine": 0.4470209160378823
+        },
+        {
+          "a": "Berlin",
+          "b": "cat",
+          "cosine": 0.501680546848665
+        },
+        {
+          "a": "Berlin",
+          "b": "democracy",
+          "cosine": 0.4243188739107039
+        },
+        {
+          "a": "Berlin",
+          "b": "bicycle",
+          "cosine": 0.4521047676300733
+        },
+        {
+          "a": "quantum physics",
+          "b": "cat",
+          "cosine": 0.3829351173646928
+        },
+        {
+          "a": "quantum physics",
+          "b": "democracy",
+          "cosine": 0.4045346791323236
+        },
+        {
+          "a": "quantum physics",
+          "b": "bicycle",
+          "cosine": 0.4083274069264587
+        },
+        {
+          "a": "cat",
+          "b": "democracy",
+          "cosine": 0.39013528709478035
+        },
+        {
+          "a": "cat",
+          "b": "bicycle",
+          "cosine": 0.439169267021277
+        },
+        {
+          "a": "democracy",
+          "b": "bicycle",
+          "cosine": 0.4142960316640375
+        }
+      ],
+      "stats": {
+        "diacritic_vs_ascii_same_word": {
+          "n": 10,
+          "mean": 0.8879816531662336,
+          "min": 0.409330406276456,
+          "max": 1.0,
+          "median": 1.0
+        },
+        "cross_diacritic": {
+          "n": 45,
+          "mean": 0.9918958439888723,
+          "min": 0.9594792199443614,
+          "max": 1.0,
+          "median": 1.0
+        },
+        "cross_control": {
+          "n": 10,
+          "mean": 0.42645228936308943,
+          "min": 0.3829351173646928,
+          "max": 0.501680546848665,
+          "median": 0.4243188739107039
+        }
+      },
+      "divergence_active": true,
+      "failure_modes": [
+        "diacritic_attractor"
+      ],
+      "severity": 0.5774619014595493
+    },
+    "all-minilm": {
+      "status": "ok",
+      "model": "all-minilm",
+      "model_info": {
+        "family": "bert",
+        "families": [
+          "bert"
+        ],
+        "parameter_size": "23M",
+        "quantization_level": "F16",
+        "format": "gguf"
+      },
+      "same_word_sims": [
+        {
+          "diacritic": "Hokkaidō",
+          "ascii": "Hokkaido",
+          "cosine": 0.2255547295805946
+        },
+        {
+          "diacritic": "Éire",
+          "ascii": "Eire",
+          "cosine": 0.16425409153916146
+        },
+        {
+          "diacritic": "Zürich",
+          "ascii": "Zurich",
+          "cosine": 0.16793539266051008
+        },
+        {
+          "diacritic": "café",
+          "ascii": "cafe",
+          "cosine": 0.22379710925434992
+        },
+        {
+          "diacritic": "Dvořák",
+          "ascii": "Dvorak",
+          "cosine": 0.1824341995389809
+        },
+        {
+          "diacritic": "naïve",
+          "ascii": "naive",
+          "cosine": 0.13053663604383428
+        },
+        {
+          "diacritic": "São Paulo",
+          "ascii": "Sao Paulo",
+          "cosine": 0.7370386616761785
+        },
+        {
+          "diacritic": "Malmö",
+          "ascii": "Malmo",
+          "cosine": 0.17195545501580797
+        },
+        {
+          "diacritic": "Gdańsk",
+          "ascii": "Gdansk",
+          "cosine": 0.11348916960320699
+        },
+        {
+          "diacritic": "Łódź",
+          "ascii": "Lodz",
+          "cosine": 0.28473321810343044
+        }
+      ],
+      "cross_diacritic_sims": [
+        {
+          "a": "Hokkaidō",
+          "b": "Éire",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Zürich",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "café",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Dvořák",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "São Paulo",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Hokkaidō",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "Zürich",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "café",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "Dvořák",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "São Paulo",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "Éire",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Éire",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "café",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "Dvořák",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "São Paulo",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "Zürich",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Zürich",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "Dvořák",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "São Paulo",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "café",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "café",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "Dvořák",
+          "b": "naïve",
+          "cosine": 1.0
+        },
+        {
+          "a": "Dvořák",
+          "b": "São Paulo",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "Dvořák",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "Dvořák",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Dvořák",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "naïve",
+          "b": "São Paulo",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "naïve",
+          "b": "Malmö",
+          "cosine": 1.0
+        },
+        {
+          "a": "naïve",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "naïve",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "São Paulo",
+          "b": "Malmö",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "São Paulo",
+          "b": "Gdańsk",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "São Paulo",
+          "b": "Łódź",
+          "cosine": 0.3736189677380271
+        },
+        {
+          "a": "Malmö",
+          "b": "Gdańsk",
+          "cosine": 1.0
+        },
+        {
+          "a": "Malmö",
+          "b": "Łódź",
+          "cosine": 1.0
+        },
+        {
+          "a": "Gdańsk",
+          "b": "Łódź",
+          "cosine": 1.0
+        }
+      ],
+      "cross_control_sims": [
+        {
+          "a": "Berlin",
+          "b": "quantum physics",
+          "cosine": 0.10748005582211657
+        },
+        {
+          "a": "Berlin",
+          "b": "cat",
+          "cosine": 0.19555272960102899
+        },
+        {
+          "a": "Berlin",
+          "b": "democracy",
+          "cosine": 0.26625532479487624
+        },
+        {
+          "a": "Berlin",
+          "b": "bicycle",
+          "cosine": 0.2225872454652632
+        },
+        {
+          "a": "quantum physics",
+          "b": "cat",
+          "cosine": 0.17928239865911597
+        },
+        {
+          "a": "quantum physics",
+          "b": "democracy",
+          "cosine": 0.1557534043638278
+        },
+        {
+          "a": "quantum physics",
+          "b": "bicycle",
+          "cosine": 0.20708306639835278
+        },
+        {
+          "a": "cat",
+          "b": "democracy",
+          "cosine": 0.2668449200649977
+        },
+        {
+          "a": "cat",
+          "b": "bicycle",
+          "cosine": 0.303919995630658
+        },
+        {
+          "a": "democracy",
+          "b": "bicycle",
+          "cosine": 0.2363028954901382
+        }
+      ],
+      "stats": {
+        "diacritic_vs_ascii_same_word": {
+          "n": 10,
+          "mean": 0.24017286630160553,
+          "min": 0.11348916960320699,
+          "max": 0.7370386616761785,
+          "median": 0.1824341995389809
+        },
+        "cross_diacritic": {
+          "n": 45,
+          "mean": 0.8747237935476053,
+          "min": 0.3736189677380271,
+          "max": 1.0,
+          "median": 1.0
+        },
+        "cross_control": {
+          "n": 10,
+          "mean": 0.21410620362903754,
+          "min": 0.10748005582211657,
+          "max": 0.303919995630658,
+          "median": 0.2225872454652632
+        }
+      },
+      "divergence_active": true,
+      "failure_modes": [
+        "unk_collapse"
+      ],
+      "severity": 1.3204447236169623
+    }
+  }
+}
