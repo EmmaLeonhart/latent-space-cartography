@@ -133,7 +133,7 @@
   word containing a diacritical mark to a single point in vector space.
   <strong>147,687</strong> confirmed cross-entity collisions on Wikidata.
   No standard benchmark catches it.
-  <br><span style="font-size:0.9em">Last updated: <strong>2026-04-08 21:15 UTC</strong> &middot; regenerated daily from <code>scripts/demo_collisions.py</code></span>
+  <br><span style="font-size:0.9em">Last updated: <strong>2026-04-11</strong> &middot; figures regenerated from live Ollama by <code>scripts/generate_defect_page.py</code> &middot; collision set re-verified daily by <a href="https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/collisions.yml">GitHub Actions</a></span>
 </p>
 
 <div class="alert">
@@ -174,50 +174,74 @@
   </div>
 </div>
 
+<div class="info" style="margin-top:2rem">
+  <h3>About the figures below</h3>
+  <p>
+    Figures 1&ndash;4 are built from a 20-word illustrative sample so the defect
+    can be eyeballed on a single screen. Every chart on this page is regenerated
+    against a live <code>ollama pull mxbai-embed-large</code> by
+    <a href="https://github.com/EmmaLeonhart/latent-space-cartography/blob/master/scripts/generate_defect_page.py"><code>scripts/generate_defect_page.py</code></a>.
+    The headline number at the top &mdash; <strong>147,687 cross-entity collisions</strong>
+    &mdash; is the full Wikidata entity-label scan, not the 20-word sample, so those
+    two numbers are on different scales. The sample rate (171/190 = 90% collisions)
+    and the Wikidata rate (~15% of all pairs) are consistent: the full Wikidata scan
+    is diluted by the majority of entity labels that happen to be pure ASCII.
+  </p>
+</div>
+
 <h2>1. The Collision Heatmap</h2>
 <p>
-  Every cell shows the cosine similarity between two words containing diacritical marks.
-  In a working embedding model, unrelated words should have low similarity (~0.3-0.5).
-  Instead, nearly every pair is at or near <strong>1.0</strong>.
+  Every cell shows the cosine similarity between two words containing diacritical marks,
+  plus one ASCII control ("S&#x00e3;o Paulo", which has an internal space that resets
+  WordPiece on its second word). In a working embedding model, unrelated words should
+  have cosine around 0.3&ndash;0.5. Instead, nearly every pair is at <strong>1.00</strong>.
+  Only the S&#x00e3;o Paulo row/column &mdash; the in-sample control &mdash; shows the
+  expected ~0.5 baseline.
 </p>
 <div class="figure">
-  <img src="figures/collision_heatmap.png" alt="Collision heatmap showing near-1.0 similarity between all diacritical words">
-  <div class="caption">Figure 1: Cosine similarity heatmap. All diacritical words map to essentially the same vector.</div>
+  <img src="figures/collision_heatmap.png" alt="Collision heatmap: 19 of 20 words collapse to cosine 1.00, with only São Paulo as the exception">
+  <div class="caption">Figure 1: 361 of 380 off-diagonal cells are at cosine ≈ 1.00. The single green row/column is "S&#x00e3;o Paulo", which tokenizes as two whitespace-delimited words and so gets an [UNK]-free embedding for the ASCII half.</div>
 </div>
 
-<h2>2. The Paradox: Unrelated Words Are More Similar Than the Same Word</h2>
+<h2>2. The Paradox: "Hokkaid&#x014d;" is closer to "&#x00c9;ire" than to "Hokkaido"</h2>
 <p>
-  "Hokkaid&#x014d;" (with macron) has cosine similarity ~1.0 with "&#x00c9;ire" (completely unrelated),
-  but only ~0.50 with "Hokkaido" (the same place, ASCII spelling). The diacritical mark doesn't
-  just add noise &mdash; it <em>completely overwrites</em> the semantic content.
+  For each word in the sample, compare two cosines: the word vs its own ASCII spelling
+  (blue), and the word vs a <em>different</em> diacritical word (terracotta). A working
+  model should put the blue bars near 1.0 (same word, same meaning) and the terracotta
+  bars near 0.5 (unrelated words). The actual result is the exact inverse &mdash; the
+  diacritical version of a word is closer to a random other diacritical word than it is
+  to its own ASCII form.
 </p>
 <div class="figure">
-  <img src="figures/diacritic_vs_plain.png" alt="Bar chart comparing same-word and cross-word similarities">
-  <div class="caption">Figure 2: Blue bars show similarity to the word's own ASCII form. Red bars show similarity to a random other diacritical word. Red is consistently higher.</div>
+  <img src="figures/diacritic_vs_plain.png" alt="Bar chart inverted: unrelated diacritical words (terracotta) score higher than matched ASCII pairs (blue)">
+  <div class="caption">Figure 2: Blue = same word (diacritic vs plain), should be ≈1.0. Terracotta = different word (diacritic vs diacritic), should be ≈0.4. The actual values are inverted. "S&#x00e3;o Paulo" is the only pair where the blue bar wins, because the ASCII half of the string survives tokenization.</div>
 </div>
 
-<h2>3. Collision Count by Threshold</h2>
+<h2>3. This is a hard collapse, not gradual degradation</h2>
 <p>
-  Even with a very strict threshold of 0.99, most diacritical word pairs still collide.
-  This is not gradual degradation &mdash; it's a hard collapse to a single point in embedding space.
+  If the failure mode were a soft blur &mdash; diacritical marks adding noise that
+  gradually erodes similarity &mdash; you would expect the number of colliding pairs
+  to drop smoothly as you raise the threshold from 0.95 toward 1.0. Instead, the curve
+  is flat all the way up to 0.99. The collisions are not approximate matches; they
+  are points at a single location in the 1024-dim vector space.
 </p>
 <div class="figure">
-  <img src="figures/collision_count_over_threshold.png" alt="Graph showing collision counts remain high even at strict thresholds">
-  <div class="caption">Figure 3: Number of colliding pairs at each cosine similarity threshold. The curve stays flat near the maximum.</div>
+  <img src="figures/collision_count_over_threshold.png" alt="Threshold sweep curve is flat at the maximum all the way from 0.80 to 0.99">
+  <div class="caption">Figure 3: 171 of 190 pairs (90%) collide at cosine ≥ 0.95 in the 20-word sample, and the count barely drops as the threshold is raised to 0.99. The collapse is binary, not gradual.</div>
 </div>
 
 <h2>4. Distribution Analysis: The [UNK] Cluster</h2>
 <p>
-  Three histograms tell the full story:
+  Three similarity distributions, side by side:
 </p>
 <ul>
-  <li><strong>Left (red):</strong> Diacritical vs diacritical &mdash; all clustered at ~1.0 (the defect)</li>
-  <li><strong>Center (blue):</strong> Control vs control &mdash; normal distribution around ~0.5 (baseline)</li>
-  <li><strong>Right (yellow):</strong> Diacritical vs control &mdash; shows the [UNK] vector has moderate similarity to everything</li>
+  <li><strong>Left (terracotta):</strong> Every pair of diacritical words &mdash; a tight spike at 1.0 (the defect), plus one small cluster at ~0.5 from the S&#x00e3;o Paulo control pairs.</li>
+  <li><strong>Middle (steel blue):</strong> Every pair of ASCII control words &mdash; a normal distribution centred around 0.51, exactly what a healthy embedding space looks like.</li>
+  <li><strong>Right (sage):</strong> Diacritical vs ASCII control &mdash; the [UNK]-dominated vector sits at ~0.49 similarity to any English word, which is why the defect doesn't trip recall-based English benchmarks.</li>
 </ul>
 <div class="figure">
-  <img src="figures/token_analysis.png" alt="Three histograms showing similarity distributions">
-  <div class="caption">Figure 4: The diacritical-diacritical distribution is a spike at 1.0, not a bell curve. This is a tokenizer defect, not embedding noise.</div>
+  <img src="figures/token_analysis.png" alt="Three histograms: leftmost shows a spike at cosine 1.0, middle and right are normal distributions around 0.5">
+  <div class="caption">Figure 4: The diacritical-vs-diacritical distribution (left) is a spike at 1.0, not a bell curve. Compare to the control (middle), which shows the bell curve a healthy embedding space actually produces. This is a tokenizer defect, not embedding noise.</div>
 </div>
 
 <h2>5. Why It Happens: A Four-Step Walkthrough</h2>
@@ -358,7 +382,7 @@ python scripts/demo_collisions.py
 <footer>
   <p>
     <a href="https://github.com/EmmaLeonhart/latent-space-cartography">latent-space-cartography</a>
-    &middot; 2026-04-08 21:15 UTC
+    &middot; last refreshed 2026-04-11
   </p>
 </footer>
 
