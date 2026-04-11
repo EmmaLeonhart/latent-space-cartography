@@ -1,0 +1,87 @@
+name: Reproduce mxbai Collisions
+
+# Runs scripts/demo_collisions.py against a live Ollama instance with
+# mxbai-embed-large pulled from the registry. This is the public,
+# replicable demonstration of the [UNK] tokenizer defect — the same
+# script that backs the GitHub Pages explainer at docs/index.html.
+#
+# Triggers:
+#   - Daily cron (07:13 UTC) so the defect is re-verified against the
+#     current published model weights on Ollama's registry.
+#   - On push when the experiment script or this workflow change.
+#   - Manual dispatch for ad-hoc runs.
+
+on:
+  schedule:
+    - cron: "13 7 * * *"
+  push:
+    branches: [master, main]
+    paths:
+      - "scripts/demo_collisions.py"
+      - ".github/workflows/collisions.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collisions
+  cancel-in-progress: false
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama --version
+
+      - name: Start Ollama daemon
+        run: |
+          nohup ollama serve > ollama.log 2>&1 &
+          # Wait for the daemon to accept requests
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:11434/api/tags > /dev/null; then
+              echo "Ollama is up"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Pull mxbai-embed-large
+        run: ollama pull mxbai-embed-large
+
+      - name: Run collision experiment
+        run: python scripts/demo_collisions.py
+
+      - name: Show result
+        run: |
+          echo "=== collisions.csv ==="
+          cat collisions.csv
+          echo ""
+          echo "=== Summary ==="
+          COLLISIONS=$(awk -F, 'NR>1 && $5=="YES"' collisions.csv | wc -l)
+          TOTAL=$(awk -F, 'NR>1' collisions.csv | wc -l)
+          echo "${COLLISIONS}/${TOTAL} pairs collide at cosine >= 0.95"
+
+      - name: Commit collisions.csv if changed
+        run: |
+          if git diff --quiet collisions.csv 2>/dev/null; then
+            echo "collisions.csv unchanged — defect is stable (as expected)"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add collisions.csv
+            git commit -m "Refresh collisions.csv from scheduled mxbai run"
+            git push
+          fi

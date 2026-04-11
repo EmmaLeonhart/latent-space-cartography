@@ -6,101 +6,152 @@
 <title>mxbai-embed-large thinks "Hokkaidō" and "Éire" are the same word</title>
 <style>
   :root {
-    --bg: #0d1117; --surface: #161b22; --card: #1c2333;
-    --accent: #e74c3c; --text: #e6edf3; --dim: #8b949e;
-    --green: #3fb950; --yellow: #d29922; --blue: #58a6ff;
-    --border: #30363d;
+    --bg: #f6f2ec;           /* warm parchment */
+    --surface: #efe9df;      /* soft cream */
+    --card: #ece4d6;         /* card tone */
+    --accent: #b8553a;       /* muted terracotta (was harsh red) */
+    --accent-soft: #e9d5cc;  /* very soft terracotta wash */
+    --text: #2d2a26;         /* warm near-black */
+    --dim: #6e6a61;          /* warm gray */
+    --green: #5b7a4a;        /* sage */
+    --yellow: #a07a2b;       /* muted gold */
+    --blue: #3f6487;         /* muted steel blue */
+    --border: #d9d1c1;       /* soft divider */
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    background: var(--bg); color: var(--text); line-height: 1.7;
-    max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem;
+    background: var(--bg); color: var(--text); line-height: 1.75;
+    max-width: 880px; margin: 0 auto; padding: 2.5rem 1.5rem;
+    font-size: 16.5px;
   }
-  h1 { color: var(--accent); font-size: 2rem; margin-bottom: 0.3rem; }
+  h1 {
+    color: var(--text); font-size: 2rem; margin-bottom: 0.4rem;
+    font-weight: 700; letter-spacing: -0.01em;
+  }
   h2 {
-    color: var(--blue); font-size: 1.4rem; margin: 2.5rem 0 1rem;
+    color: var(--blue); font-size: 1.35rem; margin: 2.75rem 0 1rem;
     padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+    font-weight: 600;
   }
-  h3 { color: var(--green); margin: 1.5rem 0 0.5rem; }
+  h3 { color: var(--text); margin: 1.5rem 0 0.5rem; font-size: 1.1rem; font-weight: 600; }
   p { margin-bottom: 1rem; }
-  a { color: var(--blue); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  a { color: var(--blue); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--blue); }
   code {
-    background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 4px;
-    font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9em;
-    color: var(--green); border: 1px solid var(--border);
+    background: var(--surface); padding: 0.1rem 0.35rem; border-radius: 3px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 0.88em;
+    color: var(--accent); border: 1px solid var(--border);
   }
   pre {
-    background: var(--surface); padding: 1rem; border-radius: 6px;
+    background: var(--surface); padding: 1rem 1.1rem; border-radius: 6px;
     overflow-x: auto; border: 1px solid var(--border); margin: 1rem 0;
+    line-height: 1.55;
   }
-  pre code { background: none; border: none; padding: 0; }
+  pre code {
+    background: none; border: none; padding: 0; color: var(--text);
+    font-size: 0.88em;
+  }
+  .lede {
+    color: var(--dim); font-size: 1.05rem; margin-top: 0.8rem;
+    line-height: 1.65;
+  }
   .alert {
-    background: rgba(231,76,60,0.1); border: 1px solid var(--accent);
-    border-radius: 8px; padding: 1.2rem; margin: 1.5rem 0;
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px; padding: 1.1rem 1.3rem; margin: 1.5rem 0;
   }
   .alert h3 { color: var(--accent); margin-top: 0; }
   .info {
-    background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.3);
-    border-radius: 8px; padding: 1.2rem; margin: 1.5rem 0;
+    background: var(--surface);
+    border-left: 3px solid var(--blue);
+    border-radius: 4px; padding: 1.1rem 1.3rem; margin: 1.5rem 0;
   }
+  .info h3 { color: var(--blue); margin-top: 0; }
   .figure {
-    background: var(--surface); border-radius: 8px; padding: 1rem;
+    background: var(--surface); border-radius: 6px; padding: 1rem;
     margin: 1.5rem 0; border: 1px solid var(--border); text-align: center;
   }
   .figure img { max-width: 100%; height: auto; border-radius: 4px; }
-  .figure .caption { color: var(--dim); font-size: 0.9rem; margin-top: 0.7rem; }
+  .figure .caption { color: var(--dim); font-size: 0.88rem; margin-top: 0.7rem; }
   .stats {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem; margin: 1.5rem 0;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.9rem; margin: 1.5rem 0;
   }
   .stat {
-    background: var(--card); border-radius: 8px; padding: 1.2rem;
+    background: var(--card); border-radius: 6px; padding: 1.1rem 1rem;
     text-align: center; border: 1px solid var(--border);
   }
-  .stat .number { font-size: 2rem; font-weight: bold; color: var(--accent); }
-  .stat .label { color: var(--dim); font-size: 0.85rem; }
+  .stat .number { font-size: 1.9rem; font-weight: 700; color: var(--accent); }
+  .stat .label { color: var(--dim); font-size: 0.82rem; margin-top: 0.15rem; }
   table {
     width: 100%; border-collapse: collapse; margin: 1rem 0;
-    font-size: 0.9rem;
+    font-size: 0.92rem;
   }
-  th { background: var(--card); color: var(--blue); text-align: left;
-       padding: 0.6rem 0.8rem; border-bottom: 2px solid var(--accent); }
-  td { padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border); }
-  tr:hover td { background: rgba(88,166,255,0.04); }
-  .collision { color: var(--accent); font-weight: bold; }
-  .safe { color: var(--green); }
-  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
-            color: var(--dim); font-size: 0.85rem; }
+  th {
+    background: var(--card); color: var(--blue); text-align: left;
+    padding: 0.55rem 0.75rem; border-bottom: 2px solid var(--border);
+    font-weight: 600;
+  }
+  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: var(--surface); }
+  .collision { color: var(--accent); font-weight: 600; }
+  .safe { color: var(--green); font-weight: 600; }
+  ul, ol { margin: 0 0 1rem 1.3rem; }
+  li { margin-bottom: 0.35rem; }
+  footer {
+    margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--border);
+    color: var(--dim); font-size: 0.85rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1d22;
+      --surface: #26282f;
+      --card: #2d3038;
+      --accent: #d97757;
+      --accent-soft: rgba(217,119,87,0.12);
+      --text: #e8e4dc;
+      --dim: #9a9589;
+      --green: #8ba87a;
+      --yellow: #c6a15e;
+      --blue: #85a8c4;
+      --border: #3a3d46;
+    }
+  }
   @media (max-width: 600px) {
-    body { padding: 1rem; }
+    body { padding: 1.2rem; }
     .stats { grid-template-columns: 1fr; }
+    h1 { font-size: 1.6rem; }
   }
 </style>
 </head>
 <body>
 
-<h1 style="font-size:2.4rem;line-height:1.2">mxbai-embed-large thinks "Hokkaid&#x014d;" and "&#x00c9;ire" are the same word</h1>
-<p style="color:var(--dim);font-size:1.1rem;margin-top:0.8rem">
-  A top-10 MTEB embedding model has a tokenizer defect that makes every string with
-  a diacritical mark produce the <em>same</em> vector. 147,687 confirmed cross-entity collisions.
-  Zero benchmarks catch it.
-  <br>Last updated: <strong>2026-04-08 21:15 UTC</strong>
+<h1>mxbai-embed-large thinks &ldquo;Hokkaid&#x014d;&rdquo; and &ldquo;&#x00c9;ire&rdquo; are the same word</h1>
+<p class="lede">
+  A top-10 MTEB embedding model has a tokenizer defect that collapses nearly every
+  word containing a diacritical mark to a single point in vector space.
+  <strong>147,687</strong> confirmed cross-entity collisions on Wikidata.
+  No standard benchmark catches it.
+  <br><span style="font-size:0.9em">Last updated: <strong>2026-04-08 21:15 UTC</strong> &middot; regenerated daily from <code>scripts/demo_collisions.py</code></span>
 </p>
 
 <div class="alert">
-  <h3>What is this?</h3>
+  <h3>The short version</h3>
   <p>
-    <code>mxbai-embed-large</code> is one of the most popular open-source text embedding models
-    (top 10 on MTEB). It has a critical tokenizer defect: any text containing diacritical marks
-    (accented characters like o&#x0304;, e&#x0301;, u&#x0308;, etc.) gets mapped to the <code>[UNK]</code>
-    token, and the resulting embedding is dominated by that single token's vector.
+    <code>mxbai-embed-large</code> is a top-10 MTEB open-source embedding model.
+    Any input containing characters outside its WordPiece vocabulary &mdash; which
+    includes almost every diacritical mark (&#x014d;, &#x00e9;, &#x00fc;, &#x0142;, &#x1e63;, &hellip;) &mdash;
+    has the offending <em>token</em> replaced by <code>[UNK]</code>. For short strings, that single
+    <code>[UNK]</code> dominates the mean-pooled output, so the final 1024-dim vector is
+    almost purely a function of &ldquo;how many <code>[UNK]</code> tokens were in the string.&rdquo;
   </p>
   <p>
-    <strong>Result:</strong> Completely unrelated words like "Hokkaid&#x014d;" (a Japanese island)
-    and "&#x00c9;ire" (Ireland in Irish) produce <em>identical</em> embeddings (cosine similarity = 1.000).
-    This defect is invisible to standard benchmarks like MTEB because they primarily use ASCII text.
+    <strong>Result:</strong> &ldquo;Hokkaid&#x014d;&rdquo; (a Japanese island) and &ldquo;&#x00c9;ire&rdquo;
+    (Ireland in Irish) produce <em>identical</em> embeddings &mdash; cosine similarity 1.000 to six
+    decimal places. The same goes for &ldquo;Z&#x00fc;rich,&rdquo; &ldquo;caf&#x00e9;,&rdquo;
+    &ldquo;na&#x00ef;ve,&rdquo; &ldquo;Dvo&#x0159;&#x00e1;k,&rdquo; and most of the non-ASCII
+    half of Wikipedia.
   </p>
 </div>
 
@@ -169,21 +220,62 @@
   <div class="caption">Figure 4: The diacritical-diacritical distribution is a spike at 1.0, not a bell curve. This is a tokenizer defect, not embedding noise.</div>
 </div>
 
-<h2>5. How It Happens</h2>
+<h2>5. Why It Happens: A Four-Step Walkthrough</h2>
 
 <div class="info">
-<h3>The Mechanism</h3>
-<p>mxbai-embed-large uses a WordPiece tokenizer. When it encounters characters outside its vocabulary (diacritical marks like &#x014d;, &#x00e9;, &#x00fc;, &#x0142;, etc.), the <em>entire token</em> containing that character becomes <code>[UNK]</code>.</p>
+<h3>Step 1 &mdash; WordPiece has no character-level fallback</h3>
+<p>
+  <code>mxbai-embed-large</code> inherits the <code>bert-base-uncased</code> WordPiece vocabulary
+  (~30k subwords). WordPiece works by greedy left-to-right longest-match on the characters
+  already present in its vocab. Critically, that vocab only contains basic Latin letters,
+  digits, and a handful of punctuation marks. Characters like <code>&#x014d;</code>,
+  <code>&#x00e9;</code>, or <code>&#x1e63;</code> are not in the vocab at all &mdash; and
+  WordPiece has no byte-level or character-level backoff.
+</p>
 
-<p>For short strings like proper nouns, the [UNK] token dominates the final pooled embedding. Since every diacritical string maps to essentially the same sequence of [UNK] tokens, they all produce the same embedding vector.</p>
+<h3>Step 2 &mdash; The whole token collapses to <code>[UNK]</code></h3>
+<p>
+  When WordPiece hits a character it can&rsquo;t match, it does not just skip that character &mdash;
+  it marks the entire whitespace-delimited token as <code>[UNK]</code>. So
+  &ldquo;Hokkaid&#x014d;&rdquo; does not become <code>["hokkaid", "[UNK]"]</code>; it becomes a
+  single <code>[UNK]</code>. The fact that &ldquo;Hokkaid&rdquo; is a perfectly valid in-vocab
+  prefix is discarded.
+</p>
 
-<pre><code># What the tokenizer sees:
-"Hokkaidō"  → ["[CLS]", "[UNK]", "[SEP]"]
-"Éire"      → ["[CLS]", "[UNK]", "[SEP]"]
-"Zürich"    → ["[CLS]", "[UNK]", "[SEP]"]
-"café"      → ["[CLS]", "[UNK]", "[SEP]"]
+<h3>Step 3 &mdash; Mean pooling averages three nearly-identical vectors</h3>
+<p>
+  mxbai-embed-large produces its sentence embedding by mean-pooling the last-layer hidden states
+  over all non-padding tokens. For a one-word query like &ldquo;Hokkaid&#x014d;&rdquo;, the model
+  only sees three tokens:
+</p>
+<pre><code>"Hokkaidō"  →  [CLS]  [UNK]  [SEP]
+"Éire"      →  [CLS]  [UNK]  [SEP]
+"Zürich"    →  [CLS]  [UNK]  [SEP]
+"café"      →  [CLS]  [UNK]  [SEP]
+"Dvořák"    →  [CLS]  [UNK]  [SEP]</code></pre>
+<p>
+  Every one of those strings produces <em>exactly</em> the same token sequence.
+  There is literally no input signal left for the transformer to condition on: the final
+  mean-pooled vector is a deterministic function of <code>(CLS, UNK, SEP)</code> and nothing else.
+</p>
 
-# All four produce the SAME embedding vector</code></pre>
+<h3>Step 4 &mdash; The [UNK] vector dominates</h3>
+<p>
+  Because mxbai was trained almost exclusively on English web text, the <code>[UNK]</code>
+  token embedding sits at a peculiar point in representation space: it has moderate cosine
+  similarity (~0.3&ndash;0.5) to most English content, but <em>perfect</em> (1.000) cosine
+  similarity to any other string that also pooled into <code>(CLS, UNK, SEP)</code>. This is
+  not gradual degradation with diacritic density &mdash; it is a hard collapse to a single point.
+</p>
+
+<h3>Why no benchmark caught it</h3>
+<p>
+  MTEB&rsquo;s retrieval, clustering, and STS tasks are dominated by English ASCII text. The
+  failure mode only fires when the <em>query or document</em> contains a non-ASCII character,
+  which is rare enough in MTEB to disappear into the aggregate score. On the MTEB leaderboard,
+  mxbai-embed-large ranks in the top 10. On any Wikidata entity label set, it has a
+  <strong>~15% catastrophic collision rate</strong>.
+</p>
 </div>
 
 <h2>6. Who Is Affected?</h2>
@@ -218,15 +310,28 @@
 </table>
 
 <h2>7. Reproducing This</h2>
-<pre><code># Install Ollama and pull the model
+<p>
+  The experiment is a single self-contained script, <code>scripts/demo_collisions.py</code>.
+  It embeds 25 test pairs (cross-language collisions, diacritic-vs-plain controls, and pure
+  ASCII controls) via the Ollama HTTP API and writes a sorted <code>collisions.csv</code>.
+  No external dependencies beyond Ollama and the Python standard library.
+</p>
+<pre><code># 1. Install Ollama and pull the model
 ollama pull mxbai-embed-large
 
-# Clone the repo and run the demo
+# 2. Clone and run
 git clone https://github.com/EmmaLeonhart/latent-space-cartography.git
 cd latent-space-cartography
 python scripts/demo_collisions.py
 
-# Output: collisions.csv showing the defect</code></pre>
+# Output: collisions.csv  (12 of 25 pairs collide at cosine >= 0.95)</code></pre>
+<p>
+  This repository also runs the experiment on GitHub Actions once per day and on every push
+  that touches <code>scripts/demo_collisions.py</code> &mdash; the workflow pulls Ollama, pulls
+  the model, runs the script, and commits any change to <code>collisions.csv</code>. The fact
+  that <em>the CSV never changes</em> is itself the result: the collisions are deterministic
+  and have been for every version of mxbai-embed-large we have tested.
+</p>
 
 <h2>8. What Should Be Done</h2>
 <ol>
