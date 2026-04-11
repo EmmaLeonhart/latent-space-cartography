@@ -174,18 +174,60 @@
   </div>
 </div>
 
+<h2>Daily reproduction on real Wikidata entities</h2>
+<p>
+  Every day, <a href="https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/collisions.yml">a
+  GitHub Actions cron job</a> pulls a fresh <code>ollama pull mxbai-embed-large</code>,
+  queries the Wikidata SPARQL endpoint for ~700 settlements from 12 diacritic-heavy
+  countries (Czech, Polish, Vietnamese, German, French, Romanian, Hungarian, Turkish,
+  Slovak, Portuguese, Spanish, Icelandic), pulls ~300 ASCII-labelled settlements
+  from UK/US/Australia/New&nbsp;Zealand as a control, embeds everything, and runs
+  the full pairwise collision analysis. The script lives at
+  <a href="https://github.com/EmmaLeonhart/latent-space-cartography/blob/master/scripts/wikidata_collision_scan.py"><code>scripts/wikidata_collision_scan.py</code></a>.
+  It is end-to-end &mdash; no cached data, no stored embeddings, nothing pre-computed.
+</p>
+
+<p>
+  Most recent run (2026-04-11, on 673 diacritical entities + 298 ASCII controls):
+</p>
+<div class="stats">
+  <div class="stat">
+    <div class="number">62,790</div>
+    <div class="label">Cross-entity collisions in diacritical group (27.8% of 226,128 pairs)</div>
+  </div>
+  <div class="stat">
+    <div class="number">2</div>
+    <div class="label">Collisions in ASCII control group (0.0% of 44,253 pairs)</div>
+  </div>
+  <div class="stat">
+    <div class="number">0</div>
+    <div class="label">Collisions across diacritical × ASCII (200,554 pairs)</div>
+  </div>
+  <div class="stat">
+    <div class="number">0.674</div>
+    <div class="label">Mean cosine inside diacritical group (vs 0.457 for controls)</div>
+  </div>
+</div>
+<p>
+  The paper's headline number of <strong>147,687 collisions</strong> comes from the
+  full Engishiki breadth-first walk (~34,000 entities, ~1,781 of them diacritical)
+  and is the result reported in
+  <em>&ldquo;Emergent Vector Symbolic Operations in Frozen Text Embeddings&rdquo;</em>.
+  The daily CI reproduction above is a smaller, cheaper, self-contained experiment
+  with a different sampling strategy &mdash; the two numbers are on different scales
+  but they describe the same defect. What matters is the ratio: ~28% of diacritical
+  pairs collide vs ~0.005% of ASCII-control pairs. Anywhere there are accents,
+  mxbai-embed-large is effectively blind.
+</p>
+
 <div class="info" style="margin-top:2rem">
   <h3>About the figures below</h3>
   <p>
-    Figures 1&ndash;4 are built from a 20-word illustrative sample so the defect
-    can be eyeballed on a single screen. Every chart on this page is regenerated
+    Figures 1&ndash;4 are built from a 20-word curated illustrative sample so the
+    defect can be eyeballed on a single screen. The daily-CI Wikidata experiment
+    above is the full statistical reproduction. Every chart below is regenerated
     against a live <code>ollama pull mxbai-embed-large</code> by
     <a href="https://github.com/EmmaLeonhart/latent-space-cartography/blob/master/scripts/generate_defect_page.py"><code>scripts/generate_defect_page.py</code></a>.
-    The headline number at the top &mdash; <strong>147,687 cross-entity collisions</strong>
-    &mdash; is the full Wikidata entity-label scan, not the 20-word sample, so those
-    two numbers are on different scales. The sample rate (171/190 = 90% collisions)
-    and the Wikidata rate (~15% of all pairs) are consistent: the full Wikidata scan
-    is diluted by the majority of entity labels that happen to be pure ASCII.
   </p>
 </div>
 
@@ -335,26 +377,41 @@
 
 <h2>7. Reproducing This</h2>
 <p>
-  The experiment is a single self-contained script, <code>scripts/demo_collisions.py</code>.
-  It embeds 25 test pairs (cross-language collisions, diacritic-vs-plain controls, and pure
-  ASCII controls) via the Ollama HTTP API and writes a sorted <code>collisions.csv</code>.
-  No external dependencies beyond Ollama and the Python standard library.
+  There are two reproduction scripts in the repo, for different purposes:
+</p>
+<p>
+  <strong><code>scripts/wikidata_collision_scan.py</code></strong> &mdash; the full
+  statistical experiment. Queries Wikidata for ~700 diacritical settlements and
+  ~300 ASCII controls, embeds everything, computes the pairwise collision rate.
+  This is what runs on the daily GitHub Actions cron. Requires <code>numpy</code>
+  plus Ollama.
+</p>
+<p>
+  <strong><code>scripts/demo_collisions.py</code></strong> &mdash; a tiny, dependency-free
+  proof of the collision phenomenon on 25 hand-picked test pairs. Stdlib only.
+  Good for a 10-second smoke test.
 </p>
 <pre><code># 1. Install Ollama and pull the model
 ollama pull mxbai-embed-large
 
-# 2. Clone and run
+# 2. Clone the repo
 git clone https://github.com/EmmaLeonhart/latent-space-cartography.git
 cd latent-space-cartography
+
+# 3a. Tiny smoke test (no deps)
 python scripts/demo_collisions.py
 
-# Output: collisions.csv  (12 of 25 pairs collide at cosine >= 0.95)</code></pre>
+# 3b. Full Wikidata reproduction (~5 min, needs numpy)
+pip install numpy
+python scripts/wikidata_collision_scan.py</code></pre>
 <p>
-  This repository also runs the experiment on GitHub Actions once per day and on every push
-  that touches <code>scripts/demo_collisions.py</code> &mdash; the workflow pulls Ollama, pulls
-  the model, runs the script, and commits any change to <code>collisions.csv</code>. The fact
-  that <em>the CSV never changes</em> is itself the result: the collisions are deterministic
-  and have been for every version of mxbai-embed-large we have tested.
+  The full scan typically finds on the order of 60,000 cross-entity collisions in
+  a sample of ~700 diacritical entities, while the ASCII control group produces
+  essentially none. The exact counts drift slightly run-to-run because Ollama's
+  embedding pipeline has ~1e&minus;4 float-point non-determinism and the SPARQL
+  endpoint returns different sub-samples for the same query, but the collision
+  rate is stable to within a percentage point. Summary JSON from each CI run is
+  uploaded as a GitHub Actions artifact.
 </p>
 
 <h2>8. What Should Be Done</h2>

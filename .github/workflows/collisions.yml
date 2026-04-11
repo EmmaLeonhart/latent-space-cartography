@@ -1,15 +1,30 @@
 name: Reproduce mxbai Collisions
 
-# Runs scripts/demo_collisions.py against a live Ollama instance with
-# mxbai-embed-large pulled from the registry. This is the public,
-# replicable demonstration of the [UNK] tokenizer defect — the same
-# script that backs the GitHub Pages explainer at docs/index.html.
+# Full reproducibility experiment for the mxbai-embed-large [UNK] token
+# defect. On each run:
+#
+#   1. Pulls a stratified sample of ~600-900 Wikidata settlements with
+#      native-language labels (Czech, Polish, Vietnamese, German, French,
+#      Romanian, Hungarian, Turkish, Slovak, Portuguese, Spanish,
+#      Icelandic), which reliably contain diacritics.
+#   2. Pulls ~300 English-labelled settlements as an ASCII control.
+#   3. Embeds everything via a fresh `ollama pull mxbai-embed-large`.
+#   4. Computes pairwise cosine similarities inside each group and
+#      across groups, reports collision counts at threshold 0.95,
+#      prints top example pairs.
+#   5. Fails the run if the diacritical collision rate drops below 5%
+#      or the ASCII control rate rises above 2% — either would mean the
+#      defect has been fixed or something else is wrong.
+#
+# This is a real statistical experiment, not a canary check. Typical
+# output is ~60,000+ cross-entity collisions (~28% of diacritical pairs)
+# vs ~0 ASCII-control collisions.
 #
 # Triggers:
-#   - Daily cron (07:13 UTC) so the defect is re-verified against the
-#     current published model weights on Ollama's registry.
-#   - On push when the experiment script or this workflow change.
-#   - Manual dispatch for ad-hoc runs.
+#   - Daily cron (07:13 UTC) — reverify against the current Ollama
+#     registry version of mxbai-embed-large.
+#   - On push to the scan script or this workflow.
+#   - Manual dispatch.
 
 on:
   schedule:
@@ -17,7 +32,7 @@ on:
   push:
     branches: [master, main]
     paths:
-      - "scripts/demo_collisions.py"
+      - "scripts/wikidata_collision_scan.py"
       - ".github/workflows/collisions.yml"
   workflow_dispatch:
 
@@ -31,13 +46,16 @@ concurrency:
 jobs:
   reproduce:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+
+      - name: Install numpy
+        run: pip install --quiet numpy
 
       - name: Install Ollama
         run: |
@@ -47,7 +65,6 @@ jobs:
       - name: Start Ollama daemon
         run: |
           nohup ollama serve > ollama.log 2>&1 &
-          # Wait for the daemon to accept requests
           for i in $(seq 1 30); do
             if curl -sf http://localhost:11434/api/tags > /dev/null; then
               echo "Ollama is up"
@@ -59,65 +76,13 @@ jobs:
       - name: Pull mxbai-embed-large
         run: ollama pull mxbai-embed-large
 
-      - name: Run collision experiment
-        run: python scripts/demo_collisions.py
+      - name: Run Wikidata collision scan
+        run: python scripts/wikidata_collision_scan.py
 
-      - name: Show result
-        run: |
-          echo "=== collisions.csv (freshly generated) ==="
-          cat collisions.csv
-
-      - name: Verify defect is still present
-        run: |
-          # This is the core assertion. We DO NOT auto-commit the CSV,
-          # because Ollama's embedding pipeline has ~1e-4 run-to-run
-          # jitter that can flip values sitting near rounding boundaries
-          # and produce daily noise-commits. What actually matters is the
-          # set of (text_a, text_b) pairs that cross the 0.95 collision
-          # threshold. If that set changes, the mxbai defect has finally
-          # been fixed (or regressed) and a human should look.
-
-          python - <<'PY'
-          import csv, sys
-
-          EXPECTED_COLLISIONS = {
-              ("cross_collision", "Aikanã", "kugyō"),
-              ("cross_collision", "Djazaïr", "Éire"),
-              ("cross_collision", "Filasṭīn", "Jinmyōchō"),
-              ("cross_collision", "Filasṭīn", "Éire"),
-              ("cross_collision", "Hokkaidō", "Jinmyōchō"),
-              ("cross_collision", "Hokkaidō", "Shōtai"),
-              ("cross_collision", "Hokkaidō", "Éire"),
-              ("cross_collision", "Jinmyōchō", "kugyō"),
-              ("cross_collision", "Shōtoku", "Jinmyōchō"),
-              ("cross_collision", "Shōtoku", "România"),
-              ("cross_collision", "kugyō", "Djazaïr"),
-              ("cross_collision", "naïve", "Zürich"),
-          }
-
-          with open("collisions.csv", encoding="utf-8") as f:
-              rows = list(csv.DictReader(f))
-
-          actual_collisions = {
-              (r["category"], r["text_a"], r["text_b"])
-              for r in rows
-              if r["collision"] == "YES"
-          }
-
-          total = len(rows)
-          print(f"{len(actual_collisions)}/{total} pairs collide at cosine >= 0.95")
-
-          missing = EXPECTED_COLLISIONS - actual_collisions
-          unexpected = actual_collisions - EXPECTED_COLLISIONS
-
-          if missing:
-              print(f"FAIL: expected collisions that did not fire: {missing}")
-          if unexpected:
-              print(f"FAIL: unexpected new collisions: {unexpected}")
-
-          if missing or unexpected:
-              print("The mxbai defect set has changed — investigate.")
-              sys.exit(1)
-
-          print("✓ Defect is still present, all 12 expected collisions fired.")
-          PY
+      - name: Upload summary artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wikidata-collision-summary
+          path: wikidata_collision_summary.json
+          retention-days: 90
