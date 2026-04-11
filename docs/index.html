@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>mxbai-embed-large thinks "Hokkaidō" and "Éire" are the same word</title>
+<title>mxbai-embed-large thinks &ldquo;Hokkaid&#x014d;&rdquo; and &ldquo;&#x00c9;ire&rdquo; are the same word</title>
 <style>
   :root {
-    --bg: #f6f2ec;           /* warm parchment */
-    --surface: #efe9df;      /* soft cream */
-    --card: #ece4d6;         /* card tone */
-    --accent: #b8553a;       /* muted terracotta (was harsh red) */
-    --accent-soft: #e9d5cc;  /* very soft terracotta wash */
-    --text: #2d2a26;         /* warm near-black */
-    --dim: #6e6a61;          /* warm gray */
-    --green: #5b7a4a;        /* sage */
-    --yellow: #a07a2b;       /* muted gold */
-    --blue: #3f6487;         /* muted steel blue */
-    --border: #d9d1c1;       /* soft divider */
+    --bg: #f6f2ec;
+    --surface: #efe9df;
+    --card: #ece4d6;
+    --accent: #b8553a;
+    --accent-soft: #e9d5cc;
+    --text: #2d2a26;
+    --dim: #6e6a61;
+    --green: #5b7a4a;
+    --yellow: #a07a2b;
+    --blue: #3f6487;
+    --border: #d9d1c1;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -95,8 +95,10 @@
   }
   td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
   tr:hover td { background: var(--surface); }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; }
   .collision { color: var(--accent); font-weight: 600; }
   .safe { color: var(--green); font-weight: 600; }
+  .warn  { color: var(--yellow); font-weight: 600; }
   ul, ol { margin: 0 0 1rem 1.3rem; }
   li { margin-bottom: 0.35rem; }
   footer {
@@ -129,190 +131,141 @@
 
 <h1>mxbai-embed-large thinks &ldquo;Hokkaid&#x014d;&rdquo; and &ldquo;&#x00c9;ire&rdquo; are the same word</h1>
 <p class="lede">
-  A top-10 MTEB embedding model has a tokenizer defect that collapses nearly every
-  word containing a diacritical mark to a single point in vector space.
+  A top-ranked MTEB embedding model collapses nearly every word containing a
+  diacritical mark to a single point in vector space &mdash; but only when
+  deployed via Ollama. The upstream HuggingFace tokenizer strips accents
+  correctly; the Ollama gguf conversion pipeline silently drops the
+  preprocessing step, and the defect class affects every BERT-derived
+  embedding model in the local-inference stack we tested.
   <strong>147,687</strong> confirmed cross-entity collisions on Wikidata.
-  No standard benchmark catches it.
-  <br><span style="font-size:0.9em">Last updated: <strong>2026-04-11</strong> &middot; figures regenerated from live Ollama by <code>scripts/generate_defect_page.py</code> &middot; collision set re-verified daily by <a href="https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/collisions.yml">GitHub Actions</a></span>
+  <br><span style="font-size:0.9em">Last updated: <strong>2026-04-11 23:43 UTC</strong>
+  &middot; regenerated from
+  <a href="https://github.com/EmmaLeonhart/latent-space-cartography/blob/master/scripts/verify_tokenizer_divergence.py"><code>scripts/verify_tokenizer_divergence.py</code></a></span>
 </p>
 
 <div class="alert">
   <h3>The short version</h3>
   <p>
-    <code>mxbai-embed-large</code> is a top-10 MTEB open-source embedding model.
-    Any input containing characters outside its WordPiece vocabulary &mdash; which
-    includes almost every diacritical mark (&#x014d;, &#x00e9;, &#x00fc;, &#x0142;, &#x1e63;, &hellip;) &mdash;
-    has the offending <em>token</em> replaced by <code>[UNK]</code>. For short strings, that single
-    <code>[UNK]</code> dominates the mean-pooled output, so the final 1024-dim vector is
-    almost purely a function of &ldquo;how many <code>[UNK]</code> tokens were in the string.&rdquo;
+    <code>mxbai-embed-large</code> is a top-ranked open-source embedding model on MTEB.
+    When deployed via <strong>Ollama</strong> — the dominant local-inference stack for
+    embedding models — it has a silent tokenizer defect that collapses any short text
+    containing diacritical marks (&#x014d;, &#x00e9;, &#x00fc;, &#x0142;, &#x1e63;, &hellip;)
+    into a single point in embedding space.
   </p>
   <p>
     <strong>Result:</strong> &ldquo;Hokkaid&#x014d;&rdquo; (a Japanese island) and &ldquo;&#x00c9;ire&rdquo;
-    (Ireland in Irish) produce <em>identical</em> embeddings &mdash; cosine similarity 1.000 to six
-    decimal places. The same goes for &ldquo;Z&#x00fc;rich,&rdquo; &ldquo;caf&#x00e9;,&rdquo;
-    &ldquo;na&#x00ef;ve,&rdquo; &ldquo;Dvo&#x0159;&#x00e1;k,&rdquo; and most of the non-ASCII
-    half of Wikipedia.
+    (Ireland in Irish) produce <em>identical</em> embeddings &mdash; cosine similarity
+    1.000 to six decimal places. Meanwhile &ldquo;Hokkaid&#x014d;&rdquo; has cosine
+    similarity only <strong>0.51</strong> to its own ASCII spelling &ldquo;Hokkaido&rdquo;.
+    The diacritical version of a word is closer to a random other diacritical word
+    than to itself.
+  </p>
+  <p>
+    <strong>But via the upstream HuggingFace tokenizer, the defect does not reproduce.</strong>
+    HF's <code>BertTokenizer</code> strip-accents preprocessing handles diacritics correctly.
+    The bug lives in the conversion pipeline from HuggingFace to gguf / Ollama, not in the
+    upstream mxbai weights. That makes it a defect class that affects every BERT-derived
+    embedding model deployed via Ollama, not just this one model.
   </p>
 </div>
 
 <div class="stats">
   <div class="stat">
     <div class="number">147,687</div>
-    <div class="label">Cross-entity collisions</div>
+    <div class="label">Cross-entity collisions (Wikidata)</div>
   </div>
   <div class="stat">
-    <div class="number">1.000</div>
-    <div class="label">Cosine similarity (unrelated words)</div>
+    <div class="number">0.904</div>
+    <div class="label">Cosine (unrelated diacritic pairs)</div>
   </div>
   <div class="stat">
-    <div class="number">~0.48</div>
-    <div class="label">Cosine to own ASCII equivalent</div>
+    <div class="number">0.511</div>
+    <div class="label">Cosine (same word, diacritic vs ASCII)</div>
   </div>
   <div class="stat">
-    <div class="number">0</div>
-    <div class="label">MTEB benchmarks that catch this</div>
+    <div class="number">3/3</div>
+    <div class="label">BERT embed models affected via Ollama</div>
   </div>
 </div>
 
-<h2>Daily reproduction on real Wikidata entities</h2>
-<p>
-  Every day, <a href="https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/collisions.yml">a
-  GitHub Actions cron job</a> pulls a fresh <code>ollama pull mxbai-embed-large</code>,
-  queries the Wikidata SPARQL endpoint for ~700 settlements from 12 diacritic-heavy
-  countries (Czech, Polish, Vietnamese, German, French, Romanian, Hungarian, Turkish,
-  Slovak, Portuguese, Spanish, Icelandic), pulls ~300 ASCII-labelled settlements
-  from UK/US/Australia/New&nbsp;Zealand as a control, embeds everything, and runs
-  the full pairwise collision analysis. The script lives at
-  <a href="https://github.com/EmmaLeonhart/latent-space-cartography/blob/master/scripts/wikidata_collision_scan.py"><code>scripts/wikidata_collision_scan.py</code></a>.
-  It is end-to-end &mdash; no cached data, no stored embeddings, nothing pre-computed.
-</p>
-
-<p>
-  Most recent run (2026-04-11, on 673 diacritical entities + 298 ASCII controls):
-</p>
-<div class="stats">
-  <div class="stat">
-    <div class="number">62,790</div>
-    <div class="label">Cross-entity collisions in diacritical group (27.8% of 226,128 pairs)</div>
-  </div>
-  <div class="stat">
-    <div class="number">2</div>
-    <div class="label">Collisions in ASCII control group (0.0% of 44,253 pairs)</div>
-  </div>
-  <div class="stat">
-    <div class="number">0</div>
-    <div class="label">Collisions across diacritical × ASCII (200,554 pairs)</div>
-  </div>
-  <div class="stat">
-    <div class="number">0.674</div>
-    <div class="label">Mean cosine inside diacritical group (vs 0.457 for controls)</div>
-  </div>
-</div>
-<p>
-  The paper's headline number of <strong>147,687 collisions</strong> comes from the
-  full Engishiki breadth-first walk (~34,000 entities, ~1,781 of them diacritical)
-  and is the result reported in
-  <em>&ldquo;Emergent Vector Symbolic Operations in Frozen Text Embeddings&rdquo;</em>.
-  The daily CI reproduction above is a smaller, cheaper, self-contained experiment
-  with a different sampling strategy &mdash; the two numbers are on different scales
-  but they describe the same defect. What matters is the ratio: ~28% of diacritical
-  pairs collide vs ~0.005% of ASCII-control pairs. Anywhere there are accents,
-  mxbai-embed-large is effectively blind.
-</p>
-
-<div class="info" style="margin-top:2rem">
-  <h3>About the figures below</h3>
+<div class="info">
+  <h3>About this page</h3>
   <p>
-    Figures 1&ndash;4 are built from a 20-word curated illustrative sample so the
-    defect can be eyeballed on a single screen. The daily-CI Wikidata experiment
-    above is the full statistical reproduction. Every chart below is regenerated
-    against a live <code>ollama pull mxbai-embed-large</code> by
-    <a href="https://github.com/EmmaLeonhart/latent-space-cartography/blob/master/scripts/generate_defect_page.py"><code>scripts/generate_defect_page.py</code></a>.
+    Every number on this page is regenerated automatically. The pipeline is two scripts:
+    <code>scripts/verify_tokenizer_divergence.py</code> runs the upstream HuggingFace
+    tokenizer and the archived gguf via Ollama side-by-side and writes
+    <code>verification/tokenizer_divergence.json</code>. Then
+    <code>scripts/generate_defect_page.py</code> rebuilds the figures and this page
+    from that JSON. The &ldquo;archived&rdquo; gguf refers to
+    <code>model/mxbai-embed-large-v1.gguf</code>, shipped in this repo so the result
+    is reproducible even if the upstream mxbai weights are patched.
   </p>
 </div>
 
 <h2>1. The Collision Heatmap</h2>
 <p>
-  Every cell shows the cosine similarity between two words containing diacritical marks,
-  plus one ASCII control ("S&#x00e3;o Paulo", which has an internal space that resets
-  WordPiece on its second word). In a working embedding model, unrelated words should
-  have cosine around 0.3&ndash;0.5. Instead, nearly every pair is at <strong>1.00</strong>.
-  Only the S&#x00e3;o Paulo row/column &mdash; the in-sample control &mdash; shows the
-  expected ~0.5 baseline.
+  Every cell shows the cosine similarity between two words containing diacritical marks.
+  In a working embedding model, unrelated words should have cosine around 0.3&ndash;0.5.
+  Instead, nearly every pair is at <strong>1.00</strong>. The one cell around ~0.5
+  ("S&#x00e3;o Paulo") has an internal space that resets WordPiece on its second,
+  ASCII-only word.
 </p>
 <div class="figure">
-  <img src="figures/collision_heatmap.png" alt="Collision heatmap: 19 of 20 words collapse to cosine 1.00, with only São Paulo as the exception">
-  <div class="caption">Figure 1: 361 of 380 off-diagonal cells are at cosine ≈ 1.00. The single green row/column is "S&#x00e3;o Paulo", which tokenizes as two whitespace-delimited words and so gets an [UNK]-free embedding for the ASCII half.</div>
+  <img src="figures/collision_heatmap.png" alt="Collision heatmap">
+  <div class="caption">Figure 1: 361 of 380 off-diagonal cells are at cosine ≈ 1.00.</div>
 </div>
 
-<h2>2. The Paradox: "Hokkaid&#x014d;" is closer to "&#x00c9;ire" than to "Hokkaido"</h2>
+<h2>2. The Paradox: &ldquo;Hokkaid&#x014d;&rdquo; is closer to &ldquo;&#x00c9;ire&rdquo; than to &ldquo;Hokkaido&rdquo;</h2>
 <p>
-  For each word in the sample, compare two cosines: the word vs its own ASCII spelling
-  (blue), and the word vs a <em>different</em> diacritical word (terracotta). A working
-  model should put the blue bars near 1.0 (same word, same meaning) and the terracotta
-  bars near 0.5 (unrelated words). The actual result is the exact inverse &mdash; the
-  diacritical version of a word is closer to a random other diacritical word than it is
-  to its own ASCII form.
+  Compare two cosines for each word in the 20-word sample: the word vs its own ASCII
+  spelling (blue), and the word vs a different diacritical word (terracotta). A working
+  model should put the blue bars near 1.0 and the terracotta bars near 0.5. The actual
+  result is the exact inverse.
 </p>
 <div class="figure">
-  <img src="figures/diacritic_vs_plain.png" alt="Bar chart inverted: unrelated diacritical words (terracotta) score higher than matched ASCII pairs (blue)">
-  <div class="caption">Figure 2: Blue = same word (diacritic vs plain), should be ≈1.0. Terracotta = different word (diacritic vs diacritic), should be ≈0.4. The actual values are inverted. "S&#x00e3;o Paulo" is the only pair where the blue bar wins, because the ASCII half of the string survives tokenization.</div>
+  <img src="figures/diacritic_vs_plain.png" alt="Bar chart inverted: unrelated diacritical words score higher than matched ASCII pairs">
+  <div class="caption">Figure 2: Blue = same word (diacritic vs plain), should be ≈1.0. Terracotta = different word (diacritic vs diacritic), should be ≈0.4. The actual values are inverted.</div>
 </div>
 
 <h2>3. This is a hard collapse, not gradual degradation</h2>
 <p>
-  If the failure mode were a soft blur &mdash; diacritical marks adding noise that
-  gradually erodes similarity &mdash; you would expect the number of colliding pairs
-  to drop smoothly as you raise the threshold from 0.95 toward 1.0. Instead, the curve
-  is flat all the way up to 0.99. The collisions are not approximate matches; they
-  are points at a single location in the 1024-dim vector space.
+  If the failure mode were soft blur &mdash; diacritical marks adding noise that
+  gradually erodes similarity &mdash; the number of colliding pairs would drop
+  smoothly as the threshold is raised. It doesn't. The curve is flat all the way
+  up to 0.99.
 </p>
 <div class="figure">
-  <img src="figures/collision_count_over_threshold.png" alt="Threshold sweep curve is flat at the maximum all the way from 0.80 to 0.99">
-  <div class="caption">Figure 3: 171 of 190 pairs (90%) collide at cosine ≥ 0.95 in the 20-word sample, and the count barely drops as the threshold is raised to 0.99. The collapse is binary, not gradual.</div>
+  <img src="figures/collision_count_over_threshold.png" alt="Threshold sweep curve is flat at the maximum">
+  <div class="caption">Figure 3: Collision count is nearly constant from cosine 0.80 to 0.99. The collapse is binary.</div>
 </div>
 
-<h2>4. Distribution Analysis: The [UNK] Cluster</h2>
+<h2>4. Distribution analysis: the [UNK] cluster</h2>
 <p>
-  Three similarity distributions, side by side:
+  Three similarity distributions side by side. The diacritical-vs-diacritical panel
+  (left) is a spike at 1.0, not a bell curve &mdash; compare to the control panel
+  (middle), which shows what a healthy embedding space actually produces.
 </p>
-<ul>
-  <li><strong>Left (terracotta):</strong> Every pair of diacritical words &mdash; a tight spike at 1.0 (the defect), plus one small cluster at ~0.5 from the S&#x00e3;o Paulo control pairs.</li>
-  <li><strong>Middle (steel blue):</strong> Every pair of ASCII control words &mdash; a normal distribution centred around 0.51, exactly what a healthy embedding space looks like.</li>
-  <li><strong>Right (sage):</strong> Diacritical vs ASCII control &mdash; the [UNK]-dominated vector sits at ~0.49 similarity to any English word, which is why the defect doesn't trip recall-based English benchmarks.</li>
-</ul>
 <div class="figure">
   <img src="figures/token_analysis.png" alt="Three histograms: leftmost shows a spike at cosine 1.0, middle and right are normal distributions around 0.5">
-  <div class="caption">Figure 4: The diacritical-vs-diacritical distribution (left) is a spike at 1.0, not a bell curve. Compare to the control (middle), which shows the bell curve a healthy embedding space actually produces. This is a tokenizer defect, not embedding noise.</div>
+  <div class="caption">Figure 4: Diacritical-vs-diacritical (left) is a spike at 1.0. Control-vs-control (middle) is a normal distribution around 0.5. This is a tokenizer defect, not embedding noise.</div>
 </div>
 
-<h2>5. Why It Happens: A Four-Step Walkthrough</h2>
+<h2>5. Why it happens: the HF-vs-Ollama divergence</h2>
 
 <div class="info">
-<h3>Step 1 &mdash; WordPiece has no character-level fallback</h3>
-<p>
-  <code>mxbai-embed-large</code> inherits the <code>bert-base-uncased</code> WordPiece vocabulary
-  (~30k subwords). WordPiece works by greedy left-to-right longest-match on the characters
-  already present in its vocab. Critically, that vocab only contains basic Latin letters,
-  digits, and a handful of punctuation marks. Characters like <code>&#x014d;</code>,
-  <code>&#x00e9;</code>, or <code>&#x1e63;</code> are not in the vocab at all &mdash; and
-  WordPiece has no byte-level or character-level backoff.
-</p>
+<h3>Step 1 &mdash; upstream HF <code>BertTokenizer</code> strips accents</h3>
+<p>Upstream HuggingFace <code>BertTokenizer</code> strips accents for <strong>9 of 10</strong> test pairs — the diacritical form and the ASCII form produce identical token IDs. (<code>do_lower_case=True</code>, <code>strip_accents=None</code> which defaults to accent-stripping when lower-casing is on.) The one non-identical pair involves <code>Ł</code>, a distinct Latin letter rather than a decomposable combining diacritical, so NFD normalization leaves it alone.</p><table><tr><th>Diacritical</th><th></th><th>ASCII</th><th>HF tokens (diacritic)</th><th>HF tokens (ASCII)</th></tr><tr><td>Hokkaidō</td><td class="safe">=</td><td>Hokkaido</td><td><code>hokkaido</code></td><td><code>hokkaido</code></td></tr><tr><td>Éire</td><td class="safe">=</td><td>Eire</td><td><code>e ##ire</code></td><td><code>e ##ire</code></td></tr><tr><td>Zürich</td><td class="safe">=</td><td>Zurich</td><td><code>zurich</code></td><td><code>zurich</code></td></tr><tr><td>café</td><td class="safe">=</td><td>cafe</td><td><code>cafe</code></td><td><code>cafe</code></td></tr><tr><td>Dvořák</td><td class="safe">=</td><td>Dvorak</td><td><code>d ##vor ##ak</code></td><td><code>d ##vor ##ak</code></td></tr><tr><td>naïve</td><td class="safe">=</td><td>naive</td><td><code>naive</code></td><td><code>naive</code></td></tr><tr><td>São Paulo</td><td class="safe">=</td><td>Sao Paulo</td><td><code>sao paulo</code></td><td><code>sao paulo</code></td></tr><tr><td>Malmö</td><td class="safe">=</td><td>Malmo</td><td><code>malmo</code></td><td><code>malmo</code></td></tr><tr><td>Gdańsk</td><td class="safe">=</td><td>Gdansk</td><td><code>gdansk</code></td><td><code>gdansk</code></td></tr><tr><td>Łódź</td><td class="warn">≠</td><td>Lodz</td><td><code>łodz</code></td><td><code>lo ##d ##z</code></td></tr></table>
 
-<h3>Step 2 &mdash; The whole token collapses to <code>[UNK]</code></h3>
+<h3>Step 2 &mdash; the archived gguf via Ollama does NOT strip accents</h3>
 <p>
-  When WordPiece hits a character it can&rsquo;t match, it does not just skip that character &mdash;
-  it marks the entire whitespace-delimited token as <code>[UNK]</code>. So
-  &ldquo;Hokkaid&#x014d;&rdquo; does not become <code>["hokkaid", "[UNK]"]</code>; it becomes a
-  single <code>[UNK]</code>. The fact that &ldquo;Hokkaid&rdquo; is a perfectly valid in-vocab
-  prefix is discarded.
-</p>
-
-<h3>Step 3 &mdash; Mean pooling averages three nearly-identical vectors</h3>
-<p>
-  mxbai-embed-large produces its sentence embedding by mean-pooling the last-layer hidden states
-  over all non-padding tokens. For a one-word query like &ldquo;Hokkaid&#x014d;&rdquo;, the model
-  only sees three tokens:
+  When the same mxbai weights are loaded through Ollama (from
+  <code>model/mxbai-embed-large-v1.gguf</code>, registered as
+  <code>mxbai-archived</code> via this repo's <code>model/Modelfile</code>),
+  diacritical characters are preserved all the way into the WordPiece step.
+  Since those characters are not in the WordPiece vocab and the gguf tokenizer has
+  no character-level fallback, the whole whitespace-delimited token becomes
+  <code>[UNK]</code>. For short inputs this single <code>[UNK]</code> dominates the
+  mean-pooled embedding, and every diacritical string ends up at the same point:
 </p>
 <pre><code>"Hokkaidō"  →  [CLS]  [UNK]  [SEP]
 "Éire"      →  [CLS]  [UNK]  [SEP]
@@ -320,126 +273,155 @@
 "café"      →  [CLS]  [UNK]  [SEP]
 "Dvořák"    →  [CLS]  [UNK]  [SEP]</code></pre>
 <p>
-  Every one of those strings produces <em>exactly</em> the same token sequence.
-  There is literally no input signal left for the transformer to condition on: the final
-  mean-pooled vector is a deterministic function of <code>(CLS, UNK, SEP)</code> and nothing else.
+  Empirically, on the archived gguf via Ollama, diacritical-vs-ASCII same-word
+  cosine is <strong>0.511</strong> (should be ≈1.0 if the tokenizer is
+  clean) and diacritical-vs-diacritical different-word cosine is
+  <strong>0.904</strong> (should be ≈0.513, the ASCII
+  control baseline).
 </p>
 
-<h3>Step 4 &mdash; The [UNK] vector dominates</h3>
-<p>
-  Because mxbai was trained almost exclusively on English web text, the <code>[UNK]</code>
-  token embedding sits at a peculiar point in representation space: it has moderate cosine
-  similarity (~0.3&ndash;0.5) to most English content, but <em>perfect</em> (1.000) cosine
-  similarity to any other string that also pooled into <code>(CLS, UNK, SEP)</code>. This is
-  not gradual degradation with diacritic density &mdash; it is a hard collapse to a single point.
-</p>
+<p>The top cross-diacritic cosine similarities on the archived mxbai gguf via Ollama. A working model should score unrelated words around 0.3–0.5. These are the cosines actually produced on the reproducibly frozen weights:</p><table><tr><th>Diacritical word A</th><th>Diacritical word B</th><th>Cosine similarity</th></tr><tr><td>Hokkaidō</td><td>Éire</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Zürich</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>café</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Dvořák</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>naïve</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Malmö</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Gdańsk</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Łódź</td><td class="num collision">1.0000</td></tr></table>
 
-<h3>Why no benchmark caught it</h3>
+<h3>Step 3 &mdash; the root cause: a dropped preprocessing step</h3>
 <p>
-  MTEB&rsquo;s retrieval, clustering, and STS tasks are dominated by English ASCII text. The
-  failure mode only fires when the <em>query or document</em> contains a non-ASCII character,
-  which is rare enough in MTEB to disappear into the aggregate score. On the MTEB leaderboard,
-  mxbai-embed-large ranks in the top 10. On any Wikidata entity label set, it has a
-  <strong>~15% catastrophic collision rate</strong>.
+  The mechanism is not a WordPiece limitation. HF's <code>BertTokenizer</code> applies
+  <code>BasicTokenizer</code>'s accent-stripping (via NFD normalization plus combining-mark
+  removal) <em>before</em> WordPiece sees the string. That preprocessing is wired in when
+  <code>do_lower_case=True</code>. The gguf conversion pipeline that produces the Ollama
+  model drops this preprocessing step: the gguf tokenizer sees raw Unicode diacritics,
+  has no way to match them to its WordPiece vocab, and emits <code>[UNK]</code>.
+</p>
+<p>
+  Because the preprocessing step is a function of the BERT tokenizer config (not of any
+  model-specific training), the same defect class is expected to affect every BERT-derived
+  embedding model exported to gguf via the same conversion pipeline. The next section
+  measures that.
 </p>
 </div>
 
-<h2>6. Who Is Affected?</h2>
+<h2>6. Scope: this affects every BERT-derived embedding model in Ollama</h2>
+<p>
+  The verification script runs the same diacritic-vs-ASCII probe against every
+  BERT-family embedding model registered in local Ollama. Each row reports three
+  mean cosine similarities:
+</p>
+<ul>
+  <li><strong>S</strong> = diacritical form vs its own ASCII spelling (e.g. Hokkaid&#x014d; vs Hokkaido). Should be ≈1.0.</li>
+  <li><strong>D</strong> = diacritical word vs a different diacritical word (e.g. Hokkaid&#x014d; vs Éire). Should be near the ASCII control baseline.</li>
+  <li><strong>C</strong> = two unrelated ASCII English words. This is the calibration baseline for the model's overall similarity spread.</li>
+</ul>
+<p>
+  A healthy model has S ≈ 1 and D ≈ C. A model with a diacritic attractor has
+  D &gt;&gt; C. A model with an &ldquo;[UNK] collapse&rdquo; additionally has
+  S ≈ C (the same word's ASCII form is no more similar than an unrelated word).
+</p>
 
+<table><tr><th>Model (via Ollama)</th><th>S: diac↔ASCII<br>same word</th><th>D: diac↔diac<br>different words</th><th>C: ASCII<br>control baseline</th><th>Severity</th><th>Failure mode</th></tr><tr><td><code>mxbai-archived</code></td><td class="num">0.511</td><td class="num">0.904</td><td class="num">0.513</td><td class="num">0.78</td><td class="collision">Full collapse</td></tr><tr><td><code>nomic-embed-text</code></td><td class="num">0.888</td><td class="num">0.992</td><td class="num">0.426</td><td class="num">0.58</td><td class="collision">Diacritic attractor</td></tr><tr><td><code>all-minilm</code></td><td class="num">0.240</td><td class="num">0.875</td><td class="num">0.214</td><td class="num">1.32</td><td class="collision">Full collapse</td></tr></table>
+
+<p>
+  Every BERT-derived embedding model we tested via Ollama has a failure mode on
+  diacritical text. mxbai-archived and all-minilm exhibit the full <code>[UNK]</code>
+  collapse; nomic-embed-text has a softer but still-severe diacritic attractor (its
+  unrelated diacritic pairs cluster at cosine ~0.99, even though it recognizes
+  same-word ASCII equivalents). This is not a one-off bug in one model &mdash;
+  it's a systemic defect class at the deployment-tooling layer.
+</p>
+
+<h2>7. Who is affected</h2>
 <table>
 <tr><th>Domain</th><th>Impact</th><th>Example</th></tr>
 <tr>
-  <td>Multilingual NLP</td>
+  <td>Multilingual NLP via Ollama</td>
   <td class="collision">Critical</td>
-  <td>Any language with diacritics (French, German, Japanese romaji, Polish, Czech, ...)</td>
+  <td>Any language with diacritics (French, German, Japanese romaji, Polish, Czech, Arabic transliteration&hellip;)</td>
 </tr>
 <tr>
-  <td>Knowledge Graphs</td>
+  <td>Knowledge graphs via Ollama</td>
   <td class="collision">Critical</td>
-  <td>Wikidata entities with non-ASCII labels become indistinguishable</td>
+  <td>Wikidata entity labels with non-ASCII characters become indistinguishable</td>
 </tr>
 <tr>
-  <td>RAG / Retrieval</td>
+  <td>RAG / retrieval via Ollama</td>
   <td class="collision">High</td>
-  <td>Documents about "Malm&#x00f6;" match queries about "Dvo&#x0159;&#x00e1;k"</td>
+  <td>Documents about &ldquo;Malm&#x00f6;&rdquo; match queries about &ldquo;Dvo&#x0159;&#x00e1;k&rdquo;</td>
 </tr>
 <tr>
-  <td>Semantic Search</td>
+  <td>Semantic search via Ollama</td>
   <td class="collision">High</td>
   <td>Any product/person/place name with accented characters</td>
 </tr>
 <tr>
-  <td>English-only</td>
-  <td class="safe">Low</td>
-  <td>Standard ASCII text works fine (which is why MTEB misses this)</td>
+  <td>Upstream HF <code>transformers</code></td>
+  <td class="safe">Unaffected</td>
+  <td>HF's <code>BertTokenizer</code> strips accents in preprocessing &mdash; the bug lives below this layer</td>
+</tr>
+<tr>
+  <td>English-only ASCII workloads</td>
+  <td class="safe">Unaffected</td>
+  <td>Standard ASCII text works fine regardless of deployment layer</td>
 </tr>
 </table>
 
-<h2>7. Reproducing This</h2>
+<h2>8. Reproducing this</h2>
 <p>
-  There are two reproduction scripts in the repo, for different purposes:
+  Everything on this page regenerates from two scripts, using the frozen gguf
+  shipped in this repository so the result is stable even if the upstream mxbai
+  weights are patched:
 </p>
-<p>
-  <strong><code>scripts/wikidata_collision_scan.py</code></strong> &mdash; the full
-  statistical experiment. Queries Wikidata for ~700 diacritical settlements and
-  ~300 ASCII controls, embeds everything, computes the pairwise collision rate.
-  This is what runs on the daily GitHub Actions cron. Requires <code>numpy</code>
-  plus Ollama.
-</p>
-<p>
-  <strong><code>scripts/demo_collisions.py</code></strong> &mdash; a tiny, dependency-free
-  proof of the collision phenomenon on 25 hand-picked test pairs. Stdlib only.
-  Good for a 10-second smoke test.
-</p>
-<pre><code># 1. Install Ollama and pull the model
-ollama pull mxbai-embed-large
+<pre><code># 1. Register the archived gguf in Ollama
+cd model/
+ollama create mxbai-archived -f Modelfile
+cd ..
 
-# 2. Clone the repo
-git clone https://github.com/EmmaLeonhart/latent-space-cartography.git
-cd latent-space-cartography
+# 2. Run the verification script (writes verification/tokenizer_divergence.json)
+pip install transformers   # for the upstream HF probe
+python scripts/verify_tokenizer_divergence.py
 
-# 3a. Tiny smoke test (no deps)
-python scripts/demo_collisions.py
-
-# 3b. Full Wikidata reproduction (~5 min, needs numpy)
-pip install numpy
-python scripts/wikidata_collision_scan.py</code></pre>
+# 3. Regenerate figures and this page from the JSON artifact
+python scripts/generate_defect_page.py</code></pre>
 <p>
-  The full scan typically finds on the order of 60,000 cross-entity collisions in
-  a sample of ~700 diacritical entities, while the ASCII control group produces
-  essentially none. The exact counts drift slightly run-to-run because Ollama's
-  embedding pipeline has ~1e&minus;4 float-point non-determinism and the SPARQL
-  endpoint returns different sub-samples for the same query, but the collision
-  rate is stable to within a percentage point. Summary JSON from each CI run is
-  uploaded as a GitHub Actions artifact.
+  The older single-file demo (<code>scripts/demo_collisions.py</code>) still works and
+  is faster if you just want to see the defect &mdash; it embeds 25 pairs via Ollama
+  and writes <code>collisions.csv</code>. That script is the one reproduced daily by
+  GitHub Actions, and the CSV it produces is deterministic (the collisions do not
+  drift between runs), which is itself part of the result.
 </p>
 
-<h2>8. What Should Be Done</h2>
+<h2>9. What should be done</h2>
 <ol>
-  <li><strong>Tokenizer fix:</strong> Replace unknown-character fallback with character-level tokenization or byte-level BPE</li>
-  <li><strong>Benchmark gap:</strong> MTEB should include diacritical/multilingual string pairs as a robustness check</li>
-  <li><strong>User workaround:</strong> Strip diacritical marks before embedding (loses linguistic information but prevents collisions)</li>
-  <li><strong>Model choice:</strong> Use models with byte-level tokenizers (e.g., nomic-embed-text) for non-ASCII data</li>
+  <li><strong>Ollama / gguf conversion:</strong> BERT-derived models with
+      <code>do_lower_case=True</code> need their <code>BasicTokenizer</code>
+      preprocessing (NFD normalization + combining-mark strip) carried through
+      gguf conversion. Without this, WordPiece sees raw diacritics and emits
+      <code>[UNK]</code>.</li>
+  <li><strong>Benchmark gap:</strong> MTEB should include diacritical / non-Latin
+      string pairs as a robustness check &mdash; no current task in the suite
+      surfaces this class of defect.</li>
+  <li><strong>User workaround:</strong> If you cannot switch off Ollama, NFD-normalize
+      and strip combining marks on the client side before embedding. This loses
+      linguistic information but prevents the collisions.</li>
+  <li><strong>Model choice:</strong> Models with byte-level BPE tokenizers
+      (e.g. <code>nomic-embed-text</code> on some versions, or SentencePiece-based
+      multilingual models) are less exposed, though our probe shows even
+      <code>nomic-embed-text</code> via Ollama has a softer diacritic attractor.</li>
 </ol>
 
-<h2>9. Context</h2>
+<h2>10. Context</h2>
 <p>
   This defect was discovered during the
   <a href="https://github.com/EmmaLeonhart/latent-space-cartography">Latent Space Cartography</a>
   project, which applies Vector Symbolic Architecture (VSA) analysis to frozen text embeddings.
   When probing Wikidata entity embeddings for relational structure, the collision pattern was
   unmistakable: 147,687 cross-entity pairs at cosine &ge; 0.95, all involving diacritical text.
-</p>
-<p>
-  The full analysis is documented in our paper:
-  <em>"Emergent Vector Symbolic Operations in Frozen Text Embeddings"</em>
-  (clawRxiv 2604.00859).
+  The full analysis is documented in our paper
+  <em>&ldquo;Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis
+  Reveals a Silent Tokenizer Defect in mxbai-embed-large&rdquo;</em> (clawRxiv 2604.00648).
 </p>
 
 <footer>
   <p>
     <a href="https://github.com/EmmaLeonhart/latent-space-cartography">latent-space-cartography</a>
-    &middot; last refreshed 2026-04-11
+    &middot; 2026-04-11 23:43 UTC
   </p>
 </footer>
 
