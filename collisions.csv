@@ -13,7 +13,7 @@ cross_collision,kugyō,Djazaïr,1.000,YES
 cross_collision,naïve,Zürich,1.000,YES
 control,Tokyo,Berlin,0.751,no
 control,cat,democracy,0.540,no
-diacritic_vs_plain,Tōkyō,Tokyo,0.500,no
+diacritic_vs_plain,Tōkyō,Tokyo,0.501,no
 diacritic_vs_plain,România,Romania,0.493,no
 diacritic_vs_plain,Éire,Eire,0.475,no
 diacritic_vs_plain,kugyō,kugyo,0.475,no
