@@ -8,7 +8,19 @@
       "Bash(git pull:*)",
       "Bash(git checkout:*)",
       "Bash(git rebase:*)",
-      "Bash(GIT_EDITOR=true git rebase --continue)"
+      "Bash(GIT_EDITOR=true git rebase --continue)",
+      "Bash(gh run:*)",
+      "Bash(curl -sf http://localhost:11434/api/tags)",
+      "Bash(gh api:*)",
+      "Bash(curl -sS https://emmaleonhart.github.io/latent-space-cartography/)",
+      "Bash(curl -sS -o /dev/null -w \"status=%{http_code} type=%{content_type} size=%{size_download}\\\\n\" https://emmaleonhart.github.io/latent-space-cartography/figures/collision_heatmap.png)",
+      "Bash(curl -sS -o /dev/null -w \"status=%{http_code} type=%{content_type} size=%{size_download}\\\\n\" https://emmaleonhart.github.io/latent-space-cartography/figures/diacritic_vs_plain.png)",
+      "Bash(curl -sS -o /dev/null -w \"status=%{http_code} type=%{content_type} size=%{size_download}\\\\n\" https://emmaleonhart.github.io/latent-space-cartography/figures/collision_count_over_threshold.png)",
+      "Bash(curl -sS -o /dev/null -w \"status=%{http_code} type=%{content_type} size=%{size_download}\\\\n\" https://emmaleonhart.github.io/latent-space-cartography/figures/token_analysis.png)",
+      "Bash(curl -sS -o /dev/null -w \"heatmap=%{size_download}b \" \"https://emmaleonhart.github.io/latent-space-cartography/figures/collision_heatmap.png?t=$\\(date +%s\\)\")",
+      "Bash(curl -sS -o /dev/null -w \"bar=%{size_download}b \" \"https://emmaleonhart.github.io/latent-space-cartography/figures/diacritic_vs_plain.png?t=$\\(date +%s\\)\")",
+      "Bash(curl -sS -o /dev/null -w \"sweep=%{size_download}b \" \"https://emmaleonhart.github.io/latent-space-cartography/figures/collision_count_over_threshold.png?t=$\\(date +%s\\)\")",
+      "Bash(curl -sS -o /dev/null -w \"hist=%{size_download}b\\\\n\" \"https://emmaleonhart.github.io/latent-space-cartography/figures/token_analysis.png?t=$\\(date +%s\\)\")"
     ]
   }
 }
