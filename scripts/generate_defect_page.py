@@ -9,7 +9,7 @@ Produces:
   - docs/figures/diacritic_vs_plain.png
   - docs/figures/collision_count_over_threshold.png
   - docs/figures/token_analysis.png
-  - docs/index.html  (regenerated from warm-parchment template +
+  - docs/tokenization-error.html  (regenerated from warm-parchment template +
                       verification/tokenizer_divergence.json)
 
 Prereqs:
@@ -973,7 +973,7 @@ python scripts/generate_defect_page.py</code></pre>
 
 </body>
 </html>"""
-    path = DOCS / "index.html"
+    path = DOCS / "tokenization-error.html"
     path.write_text(body, encoding="utf-8")
     print(f"  Saved {path}")
     return
@@ -1272,7 +1272,7 @@ def main():
     fig_threshold_sweep(word2vec)
     fig_token_analysis(word2vec)
 
-    print("\nRegenerating docs/index.html from verification JSON...")
+    print("\nRegenerating docs/tokenization-error.html from verification JSON...")
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     generate_html(timestamp)
 

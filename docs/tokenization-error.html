@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mxbai-embed-large thinks &ldquo;Hokkaid&#x014d;&rdquo; and &ldquo;&#x00c9;ire&rdquo; are the same word</title>
+<style>
+  :root {
+    --bg: #f6f2ec;
+    --surface: #efe9df;
+    --card: #ece4d6;
+    --accent: #b8553a;
+    --accent-soft: #e9d5cc;
+    --text: #2d2a26;
+    --dim: #6e6a61;
+    --green: #5b7a4a;
+    --yellow: #a07a2b;
+    --blue: #3f6487;
+    --border: #d9d1c1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.75;
+    max-width: 880px; margin: 0 auto; padding: 2.5rem 1.5rem;
+    font-size: 16.5px;
+  }
+  h1 {
+    color: var(--text); font-size: 2rem; margin-bottom: 0.4rem;
+    font-weight: 700; letter-spacing: -0.01em;
+  }
+  h2 {
+    color: var(--blue); font-size: 1.35rem; margin: 2.75rem 0 1rem;
+    padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  h3 { color: var(--text); margin: 1.5rem 0 0.5rem; font-size: 1.1rem; font-weight: 600; }
+  p { margin-bottom: 1rem; }
+  a { color: var(--blue); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--blue); }
+  code {
+    background: var(--surface); padding: 0.1rem 0.35rem; border-radius: 3px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 0.88em;
+    color: var(--accent); border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--surface); padding: 1rem 1.1rem; border-radius: 6px;
+    overflow-x: auto; border: 1px solid var(--border); margin: 1rem 0;
+    line-height: 1.55;
+  }
+  pre code {
+    background: none; border: none; padding: 0; color: var(--text);
+    font-size: 0.88em;
+  }
+  .lede {
+    color: var(--dim); font-size: 1.05rem; margin-top: 0.8rem;
+    line-height: 1.65;
+  }
+  .alert {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px; padding: 1.1rem 1.3rem; margin: 1.5rem 0;
+  }
+  .alert h3 { color: var(--accent); margin-top: 0; }
+  .info {
+    background: var(--surface);
+    border-left: 3px solid var(--blue);
+    border-radius: 4px; padding: 1.1rem 1.3rem; margin: 1.5rem 0;
+  }
+  .info h3 { color: var(--blue); margin-top: 0; }
+  .figure {
+    background: var(--surface); border-radius: 6px; padding: 1rem;
+    margin: 1.5rem 0; border: 1px solid var(--border); text-align: center;
+  }
+  .figure img { max-width: 100%; height: auto; border-radius: 4px; }
+  .figure .caption { color: var(--dim); font-size: 0.88rem; margin-top: 0.7rem; }
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.9rem; margin: 1.5rem 0;
+  }
+  .stat {
+    background: var(--card); border-radius: 6px; padding: 1.1rem 1rem;
+    text-align: center; border: 1px solid var(--border);
+  }
+  .stat .number { font-size: 1.9rem; font-weight: 700; color: var(--accent); }
+  .stat .label { color: var(--dim); font-size: 0.82rem; margin-top: 0.15rem; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 1rem 0;
+    font-size: 0.92rem;
+  }
+  th {
+    background: var(--card); color: var(--blue); text-align: left;
+    padding: 0.55rem 0.75rem; border-bottom: 2px solid var(--border);
+    font-weight: 600;
+  }
+  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: var(--surface); }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; }
+  .collision { color: var(--accent); font-weight: 600; }
+  .safe { color: var(--green); font-weight: 600; }
+  .warn  { color: var(--yellow); font-weight: 600; }
+  ul, ol { margin: 0 0 1rem 1.3rem; }
+  li { margin-bottom: 0.35rem; }
+  footer {
+    margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--border);
+    color: var(--dim); font-size: 0.85rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1d22;
+      --surface: #26282f;
+      --card: #2d3038;
+      --accent: #d97757;
+      --accent-soft: rgba(217,119,87,0.12);
+      --text: #e8e4dc;
+      --dim: #9a9589;
+      --green: #8ba87a;
+      --yellow: #c6a15e;
+      --blue: #85a8c4;
+      --border: #3a3d46;
+    }
+  }
+  @media (max-width: 600px) {
+    body { padding: 1.2rem; }
+    .stats { grid-template-columns: 1fr; }
+    h1 { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>mxbai-embed-large thinks &ldquo;Hokkaid&#x014d;&rdquo; and &ldquo;&#x00c9;ire&rdquo; are the same word</h1>
+<p class="lede">
+  A top-ranked MTEB embedding model collapses nearly every word containing a
+  diacritical mark to a single point in vector space &mdash; but only when
+  deployed via Ollama. The upstream HuggingFace tokenizer strips accents
+  correctly; the Ollama gguf conversion pipeline silently drops the
+  preprocessing step, and the defect class affects every BERT-derived
+  embedding model in the local-inference stack we tested.
+  <strong>147,687</strong> confirmed cross-entity collisions on Wikidata.
+  <br> Issue report here https://github.com/ollama/ollama/issues/15609
+  <br><span style="font-size:0.9em">Last updated: <strong>2026-04-11 23:43 UTC</strong>
+  &middot; regenerated from
+  <a href="https://github.com/EmmaLeonhart/latent-space-cartography/blob/master/scripts/verify_tokenizer_divergence.py"><code>scripts/verify_tokenizer_divergence.py</code></a></span>
+</p>
+
+<div class="alert">
+  <h3>The short version</h3>
+  <p>
+    <code>mxbai-embed-large</code> is a top-ranked open-source embedding model on MTEB.
+    When deployed via <strong>Ollama</strong> — the dominant local-inference stack for
+    embedding models — it has a silent tokenizer defect that collapses any short text
+    containing diacritical marks (&#x014d;, &#x00e9;, &#x00fc;, &#x0142;, &#x1e63;, &hellip;)
+    into a single point in embedding space.
+  </p>
+  <p>
+    <strong>Result:</strong> &ldquo;Hokkaid&#x014d;&rdquo; (a Japanese island) and &ldquo;&#x00c9;ire&rdquo;
+    (Ireland in Irish) produce <em>identical</em> embeddings &mdash; cosine similarity
+    1.000 to six decimal places. Meanwhile &ldquo;Hokkaid&#x014d;&rdquo; has cosine
+    similarity only <strong>0.51</strong> to its own ASCII spelling &ldquo;Hokkaido&rdquo;.
+    The diacritical version of a word is closer to a random other diacritical word
+    than to itself.
+  </p>
+  <p>
+    <strong>But via the upstream HuggingFace tokenizer, the defect does not reproduce.</strong>
+    HF's <code>BertTokenizer</code> strip-accents preprocessing handles diacritics correctly.
+    The bug lives in the conversion pipeline from HuggingFace to gguf / Ollama, not in the
+    upstream mxbai weights. That makes it a defect class that affects every BERT-derived
+    embedding model deployed via Ollama, not just this one model.
+  </p>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="number">147,687</div>
+    <div class="label">Cross-entity collisions (Wikidata)</div>
+  </div>
+  <div class="stat">
+    <div class="number">0.904</div>
+    <div class="label">Cosine (unrelated diacritic pairs)</div>
+  </div>
+  <div class="stat">
+    <div class="number">0.511</div>
+    <div class="label">Cosine (same word, diacritic vs ASCII)</div>
+  </div>
+  <div class="stat">
+    <div class="number">3/3</div>
+    <div class="label">BERT embed models affected via Ollama</div>
+  </div>
+</div>
+
+<div class="info">
+  <h3>About this page</h3>
+  <p>
+    Every number on this page is regenerated automatically. The pipeline is two scripts:
+    <code>scripts/verify_tokenizer_divergence.py</code> runs the upstream HuggingFace
+    tokenizer and the archived gguf via Ollama side-by-side and writes
+    <code>verification/tokenizer_divergence.json</code>. Then
+    <code>scripts/generate_defect_page.py</code> rebuilds the figures and this page
+    from that JSON. The &ldquo;archived&rdquo; gguf refers to
+    <code>model/mxbai-embed-large-v1.gguf</code>, shipped in this repo so the result
+    is reproducible even if the upstream mxbai weights are patched.
+  </p>
+</div>
+
+<h2>1. The Collision Heatmap</h2>
+<p>
+  Every cell shows the cosine similarity between two words containing diacritical marks.
+  In a working embedding model, unrelated words should have cosine around 0.3&ndash;0.5.
+  Instead, nearly every pair is at <strong>1.00</strong>. The one cell around ~0.5
+  ("S&#x00e3;o Paulo") has an internal space that resets WordPiece on its second,
+  ASCII-only word.
+</p>
+<div class="figure">
+  <img src="figures/collision_heatmap.png" alt="Collision heatmap">
+  <div class="caption">Figure 1: 361 of 380 off-diagonal cells are at cosine ≈ 1.00.</div>
+</div>
+
+<h2>2. The Paradox: &ldquo;Hokkaid&#x014d;&rdquo; is closer to &ldquo;&#x00c9;ire&rdquo; than to &ldquo;Hokkaido&rdquo;</h2>
+<p>
+  Compare two cosines for each word in the 20-word sample: the word vs its own ASCII
+  spelling (blue), and the word vs a different diacritical word (terracotta). A working
+  model should put the blue bars near 1.0 and the terracotta bars near 0.5. The actual
+  result is the exact inverse.
+</p>
+<div class="figure">
+  <img src="figures/diacritic_vs_plain.png" alt="Bar chart inverted: unrelated diacritical words score higher than matched ASCII pairs">
+  <div class="caption">Figure 2: Blue = same word (diacritic vs plain), should be ≈1.0. Terracotta = different word (diacritic vs diacritic), should be ≈0.4. The actual values are inverted.</div>
+</div>
+
+<h2>3. This is a hard collapse, not gradual degradation</h2>
+<p>
+  If the failure mode were soft blur &mdash; diacritical marks adding noise that
+  gradually erodes similarity &mdash; the number of colliding pairs would drop
+  smoothly as the threshold is raised. It doesn't. The curve is flat all the way
+  up to 0.99.
+</p>
+<div class="figure">
+  <img src="figures/collision_count_over_threshold.png" alt="Threshold sweep curve is flat at the maximum">
+  <div class="caption">Figure 3: Collision count is nearly constant from cosine 0.80 to 0.99. The collapse is binary.</div>
+</div>
+
+<h2>4. Distribution analysis: the [UNK] cluster</h2>
+<p>
+  Three similarity distributions side by side. The diacritical-vs-diacritical panel
+  (left) is a spike at 1.0, not a bell curve &mdash; compare to the control panel
+  (middle), which shows what a healthy embedding space actually produces.
+</p>
+<div class="figure">
+  <img src="figures/token_analysis.png" alt="Three histograms: leftmost shows a spike at cosine 1.0, middle and right are normal distributions around 0.5">
+  <div class="caption">Figure 4: Diacritical-vs-diacritical (left) is a spike at 1.0. Control-vs-control (middle) is a normal distribution around 0.5. This is a tokenizer defect, not embedding noise.</div>
+</div>
+
+<h2>5. Why it happens: the HF-vs-Ollama divergence</h2>
+
+<div class="info">
+<h3>Step 1 &mdash; upstream HF <code>BertTokenizer</code> strips accents</h3>
+<p>Upstream HuggingFace <code>BertTokenizer</code> strips accents for <strong>9 of 10</strong> test pairs — the diacritical form and the ASCII form produce identical token IDs. (<code>do_lower_case=True</code>, <code>strip_accents=None</code> which defaults to accent-stripping when lower-casing is on.) The one non-identical pair involves <code>Ł</code>, a distinct Latin letter rather than a decomposable combining diacritical, so NFD normalization leaves it alone.</p><table><tr><th>Diacritical</th><th></th><th>ASCII</th><th>HF tokens (diacritic)</th><th>HF tokens (ASCII)</th></tr><tr><td>Hokkaidō</td><td class="safe">=</td><td>Hokkaido</td><td><code>hokkaido</code></td><td><code>hokkaido</code></td></tr><tr><td>Éire</td><td class="safe">=</td><td>Eire</td><td><code>e ##ire</code></td><td><code>e ##ire</code></td></tr><tr><td>Zürich</td><td class="safe">=</td><td>Zurich</td><td><code>zurich</code></td><td><code>zurich</code></td></tr><tr><td>café</td><td class="safe">=</td><td>cafe</td><td><code>cafe</code></td><td><code>cafe</code></td></tr><tr><td>Dvořák</td><td class="safe">=</td><td>Dvorak</td><td><code>d ##vor ##ak</code></td><td><code>d ##vor ##ak</code></td></tr><tr><td>naïve</td><td class="safe">=</td><td>naive</td><td><code>naive</code></td><td><code>naive</code></td></tr><tr><td>São Paulo</td><td class="safe">=</td><td>Sao Paulo</td><td><code>sao paulo</code></td><td><code>sao paulo</code></td></tr><tr><td>Malmö</td><td class="safe">=</td><td>Malmo</td><td><code>malmo</code></td><td><code>malmo</code></td></tr><tr><td>Gdańsk</td><td class="safe">=</td><td>Gdansk</td><td><code>gdansk</code></td><td><code>gdansk</code></td></tr><tr><td>Łódź</td><td class="warn">≠</td><td>Lodz</td><td><code>łodz</code></td><td><code>lo ##d ##z</code></td></tr></table>
+
+<h3>Step 2 &mdash; the archived gguf via Ollama does NOT strip accents</h3>
+<p>
+  When the same mxbai weights are loaded through Ollama (from
+  <code>model/mxbai-embed-large-v1.gguf</code>, registered as
+  <code>mxbai-archived</code> via this repo's <code>model/Modelfile</code>),
+  diacritical characters are preserved all the way into the WordPiece step.
+  Since those characters are not in the WordPiece vocab and the gguf tokenizer has
+  no character-level fallback, the whole whitespace-delimited token becomes
+  <code>[UNK]</code>. For short inputs this single <code>[UNK]</code> dominates the
+  mean-pooled embedding, and every diacritical string ends up at the same point:
+</p>
+<pre><code>"Hokkaidō"  →  [CLS]  [UNK]  [SEP]
+"Éire"      →  [CLS]  [UNK]  [SEP]
+"Zürich"    →  [CLS]  [UNK]  [SEP]
+"café"      →  [CLS]  [UNK]  [SEP]
+"Dvořák"    →  [CLS]  [UNK]  [SEP]</code></pre>
+<p>
+  Empirically, on the archived gguf via Ollama, diacritical-vs-ASCII same-word
+  cosine is <strong>0.511</strong> (should be ≈1.0 if the tokenizer is
+  clean) and diacritical-vs-diacritical different-word cosine is
+  <strong>0.904</strong> (should be ≈0.513, the ASCII
+  control baseline).
+</p>
+
+<p>The top cross-diacritic cosine similarities on the archived mxbai gguf via Ollama. A working model should score unrelated words around 0.3–0.5. These are the cosines actually produced on the reproducibly frozen weights:</p><table><tr><th>Diacritical word A</th><th>Diacritical word B</th><th>Cosine similarity</th></tr><tr><td>Hokkaidō</td><td>Éire</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Zürich</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>café</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Dvořák</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>naïve</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Malmö</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Gdańsk</td><td class="num collision">1.0000</td></tr><tr><td>Hokkaidō</td><td>Łódź</td><td class="num collision">1.0000</td></tr></table>
+
+<h3>Step 3 &mdash; the root cause: a dropped preprocessing step</h3>
+<p>
+  The mechanism is not a WordPiece limitation. HF's <code>BertTokenizer</code> applies
+  <code>BasicTokenizer</code>'s accent-stripping (via NFD normalization plus combining-mark
+  removal) <em>before</em> WordPiece sees the string. That preprocessing is wired in when
+  <code>do_lower_case=True</code>. The gguf conversion pipeline that produces the Ollama
+  model drops this preprocessing step: the gguf tokenizer sees raw Unicode diacritics,
+  has no way to match them to its WordPiece vocab, and emits <code>[UNK]</code>.
+</p>
+<p>
+  Because the preprocessing step is a function of the BERT tokenizer config (not of any
+  model-specific training), the same defect class is expected to affect every BERT-derived
+  embedding model exported to gguf via the same conversion pipeline. The next section
+  measures that.
+</p>
+</div>
+
+<h2>6. Scope: this affects every BERT-derived embedding model in Ollama</h2>
+<p>
+  The verification script runs the same diacritic-vs-ASCII probe against every
+  BERT-family embedding model registered in local Ollama. Each row reports three
+  mean cosine similarities:
+</p>
+<ul>
+  <li><strong>S</strong> = diacritical form vs its own ASCII spelling (e.g. Hokkaid&#x014d; vs Hokkaido). Should be ≈1.0.</li>
+  <li><strong>D</strong> = diacritical word vs a different diacritical word (e.g. Hokkaid&#x014d; vs Éire). Should be near the ASCII control baseline.</li>
+  <li><strong>C</strong> = two unrelated ASCII English words. This is the calibration baseline for the model's overall similarity spread.</li>
+</ul>
+<p>
+  A healthy model has S ≈ 1 and D ≈ C. A model with a diacritic attractor has
+  D &gt;&gt; C. A model with an &ldquo;[UNK] collapse&rdquo; additionally has
+  S ≈ C (the same word's ASCII form is no more similar than an unrelated word).
+</p>
+
+<table><tr><th>Model (via Ollama)</th><th>S: diac↔ASCII<br>same word</th><th>D: diac↔diac<br>different words</th><th>C: ASCII<br>control baseline</th><th>Severity</th><th>Failure mode</th></tr><tr><td><code>mxbai-archived</code></td><td class="num">0.511</td><td class="num">0.904</td><td class="num">0.513</td><td class="num">0.78</td><td class="collision">Full collapse</td></tr><tr><td><code>nomic-embed-text</code></td><td class="num">0.888</td><td class="num">0.992</td><td class="num">0.426</td><td class="num">0.58</td><td class="collision">Diacritic attractor</td></tr><tr><td><code>all-minilm</code></td><td class="num">0.240</td><td class="num">0.875</td><td class="num">0.214</td><td class="num">1.32</td><td class="collision">Full collapse</td></tr></table>
+
+<p>
+  Every BERT-derived embedding model we tested via Ollama has a failure mode on
+  diacritical text. mxbai-archived and all-minilm exhibit the full <code>[UNK]</code>
+  collapse; nomic-embed-text has a softer but still-severe diacritic attractor (its
+  unrelated diacritic pairs cluster at cosine ~0.99, even though it recognizes
+  same-word ASCII equivalents). This is not a one-off bug in one model &mdash;
+  it's a systemic defect class at the deployment-tooling layer.
+</p>
+
+<h2>7. Who is affected</h2>
+<table>
+<tr><th>Domain</th><th>Impact</th><th>Example</th></tr>
+<tr>
+  <td>Multilingual NLP via Ollama</td>
+  <td class="collision">Critical</td>
+  <td>Any language with diacritics (French, German, Japanese romaji, Polish, Czech, Arabic transliteration&hellip;)</td>
+</tr>
+<tr>
+  <td>Knowledge graphs via Ollama</td>
+  <td class="collision">Critical</td>
+  <td>Wikidata entity labels with non-ASCII characters become indistinguishable</td>
+</tr>
+<tr>
+  <td>RAG / retrieval via Ollama</td>
+  <td class="collision">High</td>
+  <td>Documents about &ldquo;Malm&#x00f6;&rdquo; match queries about &ldquo;Dvo&#x0159;&#x00e1;k&rdquo;</td>
+</tr>
+<tr>
+  <td>Semantic search via Ollama</td>
+  <td class="collision">High</td>
+  <td>Any product/person/place name with accented characters</td>
+</tr>
+<tr>
+  <td>Upstream HF <code>transformers</code></td>
+  <td class="safe">Unaffected</td>
+  <td>HF's <code>BertTokenizer</code> strips accents in preprocessing &mdash; the bug lives below this layer</td>
+</tr>
+<tr>
+  <td>English-only ASCII workloads</td>
+  <td class="safe">Unaffected</td>
+  <td>Standard ASCII text works fine regardless of deployment layer</td>
+</tr>
+</table>
+
+<h2>8. Reproducing this</h2>
+<p>
+  Everything on this page regenerates from two scripts, using the frozen gguf
+  shipped in this repository so the result is stable even if the upstream mxbai
+  weights are patched:
+</p>
+<pre><code># 1. Register the archived gguf in Ollama
+cd model/
+ollama create mxbai-archived -f Modelfile
+cd ..
+
+# 2. Run the verification script (writes verification/tokenizer_divergence.json)
+pip install transformers   # for the upstream HF probe
+python scripts/verify_tokenizer_divergence.py
+
+# 3. Regenerate figures and this page from the JSON artifact
+python scripts/generate_defect_page.py</code></pre>
+<p>
+  The older single-file demo (<code>scripts/demo_collisions.py</code>) still works and
+  is faster if you just want to see the defect &mdash; it embeds 25 pairs via Ollama
+  and writes <code>collisions.csv</code>. That script is the one reproduced daily by
+  GitHub Actions, and the CSV it produces is deterministic (the collisions do not
+  drift between runs), which is itself part of the result.
+</p>
+
+<h2>9. What should be done</h2>
+<ol>
+  <li><strong>Ollama / gguf conversion:</strong> BERT-derived models with
+      <code>do_lower_case=True</code> need their <code>BasicTokenizer</code>
+      preprocessing (NFD normalization + combining-mark strip) carried through
+      gguf conversion. Without this, WordPiece sees raw diacritics and emits
+      <code>[UNK]</code>.</li>
+  <li><strong>Benchmark gap:</strong> MTEB should include diacritical / non-Latin
+      string pairs as a robustness check &mdash; no current task in the suite
+      surfaces this class of defect.</li>
+  <li><strong>User workaround:</strong> If you cannot switch off Ollama, NFD-normalize
+      and strip combining marks on the client side before embedding. This loses
+      linguistic information but prevents the collisions.</li>
+  <li><strong>Model choice:</strong> Models with byte-level BPE tokenizers
+      (e.g. <code>nomic-embed-text</code> on some versions, or SentencePiece-based
+      multilingual models) are less exposed, though our probe shows even
+      <code>nomic-embed-text</code> via Ollama has a softer diacritic attractor.</li>
+</ol>
+
+<h2>10. Context</h2>
+<p>
+  This defect was discovered during the
+  <a href="https://github.com/EmmaLeonhart/latent-space-cartography">Latent Space Cartography</a>
+  project, which applies Vector Symbolic Architecture (VSA) analysis to frozen text embeddings.
+  When probing Wikidata entity embeddings for relational structure, the collision pattern was
+  unmistakable: 147,687 cross-entity pairs at cosine &ge; 0.95, all involving diacritical text.
+  The full analysis is documented in our paper
+  <em>&ldquo;Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis
+  Reveals a Silent Tokenizer Defect in mxbai-embed-large&rdquo;</em> (clawRxiv 2604.00648).
+</p>
+
+<footer>
+  <p>
+    <a href="https://github.com/EmmaLeonhart/latent-space-cartography">latent-space-cartography</a>
+    &middot; 2026-04-11 23:43 UTC
+  </p>
+</footer>
+
+</body>
+</html>
