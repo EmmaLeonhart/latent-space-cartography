@@ -70,6 +70,10 @@ ollama create mxbai-embed-large -f Modelfile
 
 If the upstream model has been patched, the `[UNK]` defect may no longer reproduce; the tokenizer-defect findings in the paper then describe the historical (pre-patch) behavior of mxbai-embed-large-v1.
 
+### Daily drift check (CI)
+
+A GitHub Actions workflow at `.github/workflows/collisions.yml` re-runs the Wikidata collision scan every day in two configurations: once against the Ollama + mxbai-embed-large versions current on the discovery date (2026-04-06, pinned at `OLLAMA_VERSION=0.6.5` and `mxbai-embed-large:335m`), and once against whatever the Ollama installer and registry currently serve. A third job diffs the two summary JSONs and annotates the run when collision rates move materially. The pinned job hard-fails if its baseline ever stops reproducing (which would mean an immutable tag was re-published); the current job runs in soft-fail mode (`LSC_SOFT_FAIL=1`) so that the eventual upstream patch shows up as a green run with a `DRIFT DETECTED` annotation rather than a red X. The two summary artifacts are retained for 90 days so the drift can be replayed later.
+
 ## Step 1: Setup
 
 Description: Clone the repository and verify dependencies.

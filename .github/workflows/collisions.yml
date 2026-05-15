@@ -1,30 +1,34 @@
 name: Reproduce mxbai Collisions
 
 # Full reproducibility experiment for the mxbai-embed-large [UNK] token
-# defect. On each run:
+# defect — runs TWICE per cron and compares the two runs:
 #
-#   1. Pulls a stratified sample of ~600-900 Wikidata settlements with
-#      native-language labels (Czech, Polish, Vietnamese, German, French,
-#      Romanian, Hungarian, Turkish, Slovak, Portuguese, Spanish,
-#      Icelandic), which reliably contain diacritics.
-#   2. Pulls ~300 English-labelled settlements as an ASCII control.
-#   3. Embeds everything via a fresh `ollama pull mxbai-embed-large`.
-#   4. Computes pairwise cosine similarities inside each group and
-#      across groups, reports collision counts at threshold 0.95,
-#      prints top example pairs.
-#   5. Fails the run if the diacritical collision rate drops below 5%
-#      or the ASCII control rate rises above 2% — either would mean the
-#      defect has been fixed or something else is wrong.
+#   1. `pinned-reproduction` — Ollama and mxbai-embed-large frozen at the
+#      versions current on the discovery date (2026-04-06). This is the
+#      historical baseline that anchors the paper's claims. If the defect
+#      ever stops reproducing here, the pinned model has been re-published
+#      under the same digest — a real CI failure.
 #
-# This is a real statistical experiment, not a canary check. Typical
-# output is ~60,000+ cross-entity collisions (~28% of diacritical pairs)
-# vs ~0 ASCII-control collisions.
+#   2. `current-reproduction` — Ollama and mxbai-embed-large at whatever
+#      the Ollama installer/registry serve today. Soft-fail mode: if the
+#      defect has been patched upstream, the run records that as DRIFT
+#      rather than turning the workflow red. We want to *learn* of an
+#      upstream fix from a green CI run, not from one that's been red for
+#      a week.
 #
-# Triggers:
-#   - Daily cron (07:13 UTC) — reverify against the current Ollama
-#     registry version of mxbai-embed-large.
-#   - On push to the scan script or this workflow.
-#   - Manual dispatch.
+#   3. `compare-drift` — downloads both summary JSONs and diffs the
+#      collision rates / mean cosines. Always succeeds; the diff is an
+#      annotation. The point is: when current diverges from pinned, that
+#      is the moment a paper-relevant world-state change has happened.
+#
+# Scan internals (same script for both jobs):
+#   - ~600-900 Wikidata settlements with diacritical native labels
+#     (cs/pl/vi/de/fr/ro/hu/tr/sk/pt/es/is) + ~300 ASCII-control settlements
+#   - Embed via Ollama, compute pairwise cosines, count collisions at 0.95
+#   - Fails if diacritical collision rate < 5% or ASCII control > 2%,
+#     unless LSC_SOFT_FAIL=1 (the `current` job sets this).
+#
+# Triggers: daily cron 07:13 UTC, on-push to the script/workflow, manual.
 
 on:
   schedule:
@@ -43,8 +47,20 @@ concurrency:
   group: collisions
   cancel-in-progress: false
 
+env:
+  # Ollama version current on the [UNK]-defect discovery date (2026-04-06).
+  # The official installer respects OLLAMA_VERSION when set in the env.
+  # Bump only if the discovery-date claim moves — *not* to track upstream.
+  PINNED_OLLAMA_VERSION: "0.6.5"
+  # mxbai-embed-large tag pinned to the 335M-parameter v1 build. Ollama
+  # registry convention is that named-size tags (`:335m`) are immutable
+  # once published; only `:latest` floats. If mixedbread-ai ever re-cuts
+  # the 335M tag, the `pinned-reproduction` job below will catch it.
+  PINNED_MXBAI_TAG: "mxbai-embed-large:335m"
+
 jobs:
-  reproduce:
+  pinned-reproduction:
+    name: Pinned reproduction (2026-04-06 baseline)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -57,7 +73,57 @@ jobs:
       - name: Install numpy
         run: pip install --quiet numpy
 
-      - name: Install Ollama
+      - name: Install Ollama (pinned ${{ env.PINNED_OLLAMA_VERSION }})
+        run: |
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${PINNED_OLLAMA_VERSION}" sh
+          ollama --version
+
+      - name: Start Ollama daemon
+        run: |
+          nohup ollama serve > ollama.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:11434/api/tags > /dev/null; then
+              echo "Ollama is up"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Pull pinned mxbai (${{ env.PINNED_MXBAI_TAG }})
+        run: |
+          ollama pull "${PINNED_MXBAI_TAG}"
+          # Re-tag as `mxbai-embed-large` because the scan script asks
+          # ollama for that name. Keeps the script identical between jobs.
+          ollama cp "${PINNED_MXBAI_TAG}" mxbai-embed-large
+          ollama show mxbai-embed-large --modelfile | head -20 || true
+          ollama list
+
+      - name: Run Wikidata collision scan (pinned)
+        run: python scripts/wikidata_collision_scan.py
+
+      - name: Upload pinned summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wikidata-collision-summary-pinned
+          path: wikidata_collision_summary.json
+          retention-days: 90
+
+  current-reproduction:
+    name: Current reproduction (upstream drift detector)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install numpy
+        run: pip install --quiet numpy
+
+      - name: Install Ollama (current)
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama --version
@@ -73,16 +139,99 @@ jobs:
             sleep 1
           done
 
-      - name: Pull mxbai-embed-large
-        run: ollama pull mxbai-embed-large
+      - name: Pull current mxbai-embed-large (:latest)
+        run: |
+          ollama pull mxbai-embed-large
+          ollama list
 
-      - name: Run Wikidata collision scan
+      - name: Run Wikidata collision scan (current, soft-fail)
+        env:
+          LSC_SOFT_FAIL: "1"
         run: python scripts/wikidata_collision_scan.py
 
-      - name: Upload summary artifact
+      - name: Upload current summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: wikidata-collision-summary
+          name: wikidata-collision-summary-current
           path: wikidata_collision_summary.json
           retention-days: 90
+
+  compare-drift:
+    name: Compare pinned vs current
+    runs-on: ubuntu-latest
+    needs: [pinned-reproduction, current-reproduction]
+    if: always() && needs.pinned-reproduction.result == 'success'
+    steps:
+      - name: Download pinned summary
+        uses: actions/download-artifact@v4
+        with:
+          name: wikidata-collision-summary-pinned
+          path: pinned/
+
+      - name: Download current summary
+        uses: actions/download-artifact@v4
+        with:
+          name: wikidata-collision-summary-current
+          path: current/
+
+      - name: Diff pinned vs current
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+
+          pinned = json.loads(pathlib.Path("pinned/wikidata_collision_summary.json").read_text())
+          current = json.loads(pathlib.Path("current/wikidata_collision_summary.json").read_text())
+
+          def rate(s, group):
+              return s["labels"][group]["collision_rate"]
+          def cos(s, group):
+              return s["labels"][group]["mean_cosine"]
+
+          rows = []
+          for group in ("diacritical", "ascii_control"):
+              rows.append((
+                  group,
+                  rate(pinned, group), rate(current, group),
+                  cos(pinned, group), cos(current, group),
+              ))
+
+          print("=" * 72)
+          print("DRIFT REPORT: pinned (2026-04-06) vs current")
+          print("=" * 72)
+          print(f"{'group':<16} {'rate_pinned':>12} {'rate_current':>13} "
+                f"{'cos_pinned':>11} {'cos_current':>12}")
+          for g, rp, rc, cp, cc in rows:
+              print(f"{g:<16} {rp:>12.4f} {rc:>13.4f} {cp:>11.4f} {cc:>12.4f}")
+
+          # Soft annotations when rates move materially (>5 percentage points
+          # on the diacritical group, or >1 point on the ASCII control).
+          drift = []
+          d_pin = rate(pinned, "diacritical")
+          d_cur = rate(current, "diacritical")
+          if abs(d_pin - d_cur) > 0.05:
+              drift.append(
+                  f"diacritical collision rate moved {d_pin:.3f} → {d_cur:.3f}"
+              )
+          c_pin = rate(pinned, "ascii_control")
+          c_cur = rate(current, "ascii_control")
+          if abs(c_pin - c_cur) > 0.01:
+              drift.append(
+                  f"ASCII control rate moved {c_pin:.3f} → {c_cur:.3f}"
+              )
+
+          if drift:
+              print()
+              print("UPSTREAM DRIFT DETECTED:")
+              for d in drift:
+                  print(f"  - {d}")
+              gh_out = os.environ.get("GITHUB_STEP_SUMMARY")
+              if gh_out:
+                  with open(gh_out, "a") as f:
+                      f.write("## Upstream drift detected\n\n")
+                      for d in drift:
+                          f.write(f"- {d}\n")
+          else:
+              print()
+              print("No material drift: current run matches the pinned baseline.")
+          PY

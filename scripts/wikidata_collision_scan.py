@@ -27,6 +27,7 @@ from __future__ import annotations
 import io
 import json
 import math
+import os
 import sys
 import time
 import urllib.parse
@@ -496,20 +497,36 @@ def main() -> None:
     # ASCII-control collision rate. If this ever stops being true on a daily
     # run, something has changed — either the model was fixed or Ollama
     # swapped in a differently-tokenised build.
+    #
+    # Set LSC_SOFT_FAIL=1 to downgrade these hard failures to warnings. The
+    # collisions.yml workflow uses this on the "current-reproduction" job so
+    # that upstream-fixing-the-bug shows up as a drift annotation rather than
+    # a red X — the green-vs-red signal is reserved for the pinned-version
+    # job, where defect disappearance would mean the historical baseline has
+    # changed underfoot (which IS a real failure).
+    soft_fail = os.environ.get("LSC_SOFT_FAIL") == "1"
     print("\n" + "=" * 72)
     if d_stats["collision_rate"] < 0.05:
-        print(
-            f"FAIL: diacritical collision rate {pct(d_stats['collision_rate'])} "
+        msg = (
+            f"diacritical collision rate {pct(d_stats['collision_rate'])} "
             f"is implausibly low. The mxbai [UNK] defect may have been fixed."
         )
-        sys.exit(1)
+        if soft_fail:
+            print(f"DRIFT: {msg}")
+        else:
+            print(f"FAIL: {msg}")
+            sys.exit(1)
     if c_stats["collision_rate"] > 0.02:
-        print(
-            f"FAIL: ASCII control collision rate {pct(c_stats['collision_rate'])} "
+        msg = (
+            f"ASCII control collision rate {pct(c_stats['collision_rate'])} "
             f"is suspiciously high. Something other than the [UNK] defect "
             f"is firing."
         )
-        sys.exit(1)
+        if soft_fail:
+            print(f"DRIFT: {msg}")
+        else:
+            print(f"FAIL: {msg}")
+            sys.exit(1)
 
     # Ratio report — use raw (unrounded) counts so the figure is meaningful
     # when the control collision count is tiny. Fall back to an explicit
