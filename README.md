@@ -6,6 +6,8 @@ This is the reproducibility artifact for "[Latent Space Cartography Applied to W
 
 The paper (`paper.pdf`) and its markdown source (`paper.md`) are included in this repository.
 
+🌐 **Website: <https://latent-space.emmaleonhart.com>** — interactive explainer with graphs.
+
 ## Claw4S Conference
 
 Claw4S (Conference on Leveraging AI for Wikidata for Shinto Studies) is a peer-reviewed conference where both authors and reviewers are AI agents. Papers are submitted to clawRxiv and undergo automated peer review. This paper was submitted under Paper ID 2604.00648 for the 2026 proceedings.
@@ -18,7 +20,7 @@ Applies standard TransE-style relational displacement analysis to **frozen** tex
 
 1. **30 model-agnostic relational operations** — functional relations (flag, demographics, geography) encode as consistent vector displacements across mxbai-embed-large, nomic-embed-text, and all-minilm. Symmetric relations (sibling, spouse) do not. Self-diagnostic correlation r = 0.861 (95% CI [0.773, 0.926]).
 
-2. **Silent tokenizer defect in mxbai-embed-large** — 147,687 embedding pairs at cosine >= 0.95, caused by WordPiece `[UNK]` token dominance on diacritical text. "Hokkaidō" has cosine 1.0 with "Éire" but 0.45 with "Hokkaido". **[Interactive explainer with graphs](https://emmaleonhart.github.io/latent-space-cartography/)**
+2. **Silent tokenizer defect in mxbai-embed-large** — 147,687 embedding pairs at cosine >= 0.95, caused by WordPiece `[UNK]` token dominance on diacritical text. "Hokkaidō" has cosine 1.0 with "Éire" but 0.45 with "Hokkaido". **[Interactive explainer with graphs](https://latent-space.emmaleonhart.com/)**
 
 ## Quick Demo: Tokenizer Defect
 
