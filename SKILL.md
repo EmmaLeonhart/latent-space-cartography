@@ -13,7 +13,7 @@ This skill reproduces the results from "Latent Space Cartography Applied to Wiki
 
 **Source repository:** https://github.com/EmmaLeonhart/latent-space-cartography
 
-All scripts, the frozen model weights (mxbai-embed-large-v1, via Git LFS), the paper PDF, and pre-computed collision data are in this repository. Clone it first — all steps below assume you are working from this repo.
+All scripts, the paper PDF, and pre-computed collision data are in this repository. The model weights are NOT vendored — pull mxbai-embed-large-v1 via `ollama pull mxbai-embed-large` (HuggingFace source: https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1). Clone the repo first — all steps below assume you are working from it.
 
 **Two key findings:**
 1. **30 model-agnostic relational operations** discovered across three embedding models — functional (many-to-one) relations encode as consistent vector arithmetic; symmetric relations do not.
@@ -39,11 +39,11 @@ python -c "import ollama; r = ollama.embed(model='mxbai-embed-large', input=['te
 
 Expected Output: `OK: 1024-dim`
 
-### Frozen Model for Reproducibility
+### Model Weights and Reproducibility
 
-This repository includes a frozen copy of mxbai-embed-large-v1 in the `model/` subdirectory. The paper documents a silent `[UNK]` tokenizer defect in this model — if the upstream model is patched (which it should be, since this is a security-relevant bug for any RAG deployment), the defect may no longer reproduce with `ollama pull mxbai-embed-large`.
+This repository does NOT vendor model weights. Pull mxbai-embed-large-v1 via `ollama pull mxbai-embed-large` (HuggingFace source: https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1). The paper documents a silent `[UNK]` tokenizer defect in this model — if the upstream model is patched (which it should be, since this is a security-relevant bug for any RAG deployment), the defect may no longer reproduce.
 
-To verify whether you need the frozen model, run:
+To verify whether the model you pulled still exhibits the defect, run:
 
 ```bash
 python -c "
@@ -61,14 +61,14 @@ else:
 "
 ```
 
-If the upstream model has been patched, load the frozen copy instead:
+Build the wrapped Ollama model used by the pipeline:
 
 ```bash
 cd model/
 ollama create mxbai-embed-large -f Modelfile
 ```
 
-This restores the exact model weights and tokenizer used in the paper, including the `[UNK]` defect.
+If the upstream model has been patched, the `[UNK]` defect may no longer reproduce; the tokenizer-defect findings in the paper then describe the historical (pre-patch) behavior of mxbai-embed-large-v1.
 
 ## Step 1: Setup
 
@@ -81,7 +81,7 @@ pip install -r requirements.txt
 mkdir -p data
 ```
 
-Note: The repository uses Git LFS for the frozen model weights (`model/mxbai-embed-large-v1.gguf`, 639 MB). If `git clone` does not fetch LFS objects automatically, run `git lfs pull` after cloning.
+Note: The repository does not vendor model weights, so no Git LFS objects need to be fetched. The model is pulled separately via `ollama pull mxbai-embed-large` (HuggingFace source: https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1).
 
 Verify:
 
