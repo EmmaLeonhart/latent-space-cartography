@@ -49,16 +49,16 @@ python scripts/analyze_collisions.py --threshold 0.95
 
 Full reproducibility instructions with expected outputs: [SKILL.md](SKILL.md)
 
-## Frozen Model
+## Model
 
-The `model/` directory contains the exact mxbai-embed-large-v1 weights used in this paper, including the `[UNK]` tokenizer defect. If the upstream model is patched (this is a security-relevant bug for RAG systems), you can restore the original with:
+This repository no longer vendors model weights. The model is pulled via `ollama pull mxbai-embed-large` (HuggingFace: <https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1>), which is the version that carries the `[UNK]` tokenizer defect analyzed in this paper. To build the wrapped Ollama model used by the pipeline:
 
 ```bash
 cd model/
 ollama create mxbai-embed-large -f Modelfile
 ```
 
-See the Prerequisites section of [SKILL.md](SKILL.md) for a quick test to determine whether you need this.
+If the upstream model is patched (this is a security-relevant bug for RAG systems), the defect may no longer reproduce. See the Prerequisites section of [SKILL.md](SKILL.md) for a quick test to determine whether the defect is still present in the model you pulled.
 
 ## Requirements
 
@@ -74,8 +74,7 @@ paper.md                  - Paper source (markdown)
 SKILL.md                  - Full reproducibility instructions with expected outputs
 collisions.csv            - Pre-computed collision data
 model/
-  Modelfile               - Ollama model definition (points to frozen weights)
-  mxbai-embed-large-v1.gguf - Frozen model weights (639 MB)
+  Modelfile               - Ollama model definition (builds the ollama model)
 scripts/
   demo_collisions.py      - Quick standalone demo of the tokenizer defect
   random_walk.py          - BFS entity import from Wikidata
