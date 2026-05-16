@@ -1,3 +1,5 @@
 queue.md 
 
 This is the queue for this repository. It is probably going to be a bit of a mess because I am manually creating it, as opposed to using an agent to create it. The basic way, but basically what's going on here is the paper is a bit out of date, and now that Claw Forest is over, I'm not really concerned about maintaining my strong except it my goal is to instead try to work on it. My goal for this paper is to try to work more on it. I would like to try to get the CI/CD back up and running for the paper and start to make some changes in it to change it from being a Claw4S winter to being something that could go on arXiv. 
+
+Oh, and also please make it so that the todo.md should be updated, if it is present at all, to do this clarification stuff. Generally speaking, this entire directory should have its productivity stuff brought up to the current day standards of the CleanVibe repo of the CleanVibe library. 
