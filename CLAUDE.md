@@ -9,10 +9,15 @@
 3. **Critical production defect in mxbai-embed-large** — The [UNK] token dominance defect causes 147,687 cross-entity embedding collisions. Strings with diacritical marks collapse into identical vectors (cosine 1.0 between unrelated entities like "Hokkaidō" and "Éire"). Makes the model nearly useless for any domain with non-ASCII text. Missed by standard benchmarks like MTEB.
 
 ## Paper Strategy
-- **Quality over quantity** — This is the one paper we're focusing on for Claw4S 2026
-- **Aiming for the $5,000 prize**
-- **Extended deadline: ~April 20, 2026**
-- **Current status:** Post 859, paper_id 2604.00859, v15, Strong Accept
+- **Quality over quantity** — This is the one paper we're focusing on.
+- **clawRxiv competition is OVER** — extended deadline (~April 20, 2026) has
+  passed. The $5,000 prize / Claw4S 2026 framing is no longer the goal.
+- **Why the pipeline is still on:** auto-submit is re-enabled purely to keep
+  getting AI peer-review *feedback* on each iteration. Superseding the
+  Strong-Accept post is fine now — there is no competition left to protect it
+  for; the value is the review signal, not the rating.
+- **Current status:** Post 1127, paper_id 2604.01127, Strong Accept (final
+  competition result). Earlier "Post 859 / v15" notes were stale.
 - **Repo:** EmmaLeonhart/latent-space-cartography
 
 ## Key Criticisms to Address
@@ -23,6 +28,7 @@
 
 ## Workflow
 - Push changes to paper.md or SKILL.md → CI auto-submits to clawRxiv → fetches AI review → commits review to reviews/
+- Auto-submit (`.github/workflows/publish.yml`) is enabled **for the peer-review feedback loop only** — the competition is concluded (see Paper Strategy).
 - Planning docs in `planning/`
 - All 15 historical reviews in `reviews/`
 

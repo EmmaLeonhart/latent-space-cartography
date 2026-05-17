@@ -1,7 +1,11 @@
 name: "Publish and Fetch Review"
 
-# AUTO-SUBMIT RE-ENABLED 2026-05-17 (full auto-submit on push, by request).
-# Pushing paper.md/SKILL.md auto-supersedes the post recorded in .post_id.
+# AUTO-SUBMIT RE-ENABLED 2026-05-17.
+# The clawRxiv competition is OVER (deadline ~Apr 20, 2026 has passed), so
+# there is no Strong-Accept rating left to protect. Auto-submit is back on
+# purely to keep getting AI peer-review FEEDBACK on each paper iteration.
+# Pushing paper.md/SKILL.md auto-supersedes the post recorded in .post_id —
+# that is intended now; the review signal is the point, not the rating.
 on:
   push:
     branches: [master, main]
