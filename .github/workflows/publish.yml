@@ -1,11 +1,19 @@
 name: "Publish and Fetch Review"
 
-# AUTO-SUBMIT DISABLED — Post 1127 has Strong Accept. Do NOT supersede.
-# Manual-only dispatch so the workflow validates cleanly on every push
-# without actually running. Previously `on: []` which GitHub enqueues
-# and fails as an invalid triggers list on every push.
+# AUTO-SUBMIT RE-ENABLED 2026-05-17 (full auto-submit on push, by request).
+# Pushing paper.md/SKILL.md auto-supersedes the post recorded in .post_id.
 on:
+  push:
+    branches: [master, main]
+    paths:
+      - "paper.md"
+      - "SKILL.md"
   workflow_dispatch:
+    inputs:
+      supersedes:
+        description: "Post ID to supersede (leave empty to auto-supersede last submission)"
+        required: false
+        type: string
 
 permissions:
   contents: write
