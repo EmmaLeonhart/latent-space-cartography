@@ -1,6 +1,6 @@
 ---
 name: latent-space-cartography
-description: Discover relational displacement operations in frozen embedding spaces using Wikidata triples. Reproduces the key findings from "Latent Space Cartography Applied to Wikidata" — 30 model-agnostic operations with r=0.861 self-diagnostic correlation, and a silent [UNK] tokenizer defect in mxbai-embed-large causing 147,687 embedding collisions.
+description: Discover relational displacement operations in frozen embedding spaces using Wikidata triples. Reproduces the key findings from "Latent Space Cartography Applied to Wikidata" — 30 model-agnostic operations with r=0.861 self-diagnostic correlation, and a silent diacritic-collapse regression in the Ollama runtime serving mxbai-embed-large (bisected to Ollama v0.14.0, 2026-01-10) causing 147,687 embedding collisions.
 allowed-tools: Bash(python *), Bash(pip *), Bash(ollama *), WebFetch
 ---
 
@@ -9,7 +9,7 @@ allowed-tools: Bash(python *), Bash(pip *), Bash(ollama *), WebFetch
 **Author: Emma Leonhart**
 **Paper ID: 2604.00648**
 
-This skill reproduces the results from "Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Tokenizer Defect in mxbai-embed-large." It applies standard TransE-style relational displacement analysis to frozen text embedding models using Wikidata knowledge graph triples as probes.
+This skill reproduces the results from "Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Diacritic-Collapse Regression in the Ollama Runtime (mxbai-embed-large)." It applies standard TransE-style relational displacement analysis to frozen text embedding models using Wikidata knowledge graph triples as probes.
 
 **Source repository:** https://github.com/EmmaLeonhart/latent-space-cartography
 
@@ -17,7 +17,7 @@ All scripts, the paper PDF, and pre-computed collision data are in this reposito
 
 **Two key findings:**
 1. **30 model-agnostic relational operations** discovered across three embedding models — functional (many-to-one) relations encode as consistent vector arithmetic; symmetric relations do not.
-2. **A silent tokenizer defect** in mxbai-embed-large: 147,687 cross-entity embedding pairs at cosine >= 0.95, caused by WordPiece `[UNK]` token dominance on diacritical text. "Hokkaid&#333;" has cosine 1.0 with "Eire" but only 0.45 with its own ASCII equivalent "Hokkaido."
+2. **A silent diacritic-collapse regression in the Ollama runtime** serving mxbai-embed-large: 147,687 cross-entity embedding pairs at cosine >= 0.95, diacritical text collapsing into a single `[UNK]`-dominated region. Bisected to Ollama v0.14.0 (2026-01-10): the same model blob is healthy on Ollama <= v0.13.4 and defective on >= v0.14.0. On affected versions "Hokkaid&#333;" has cosine 1.0 with "Eire" but only 0.45 with its own ASCII equivalent "Hokkaido."
 
 ## Prerequisites
 
@@ -41,38 +41,28 @@ Expected Output: `OK: 1024-dim`
 
 ### Model Weights and Reproducibility
 
-This repository does NOT vendor model weights. Pull mxbai-embed-large-v1 via `ollama pull mxbai-embed-large` (HuggingFace source: https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1). The paper documents a silent `[UNK]` tokenizer defect in this model — if the upstream model is patched (which it should be, since this is a security-relevant bug for any RAG deployment), the defect may no longer reproduce.
+This repository does NOT vendor model weights. Pull the model via `ollama pull mxbai-embed-large` (HuggingFace source: https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1). **The defect is in the Ollama runtime, not the model.** A version bisection over 21 Ollama releases (`.github/workflows/collision-bisect.yml`) localizes it to **Ollama v0.14.0 (2026-01-10)**: the byte-identical `mxbai-embed-large` registry blob is healthy on Ollama ≤ v0.13.4 and defective on every release from v0.14.0 through the current v0.24.0. So **what you pin to reproduce the finding is the Ollama version**, not the model. `scripts/resolve_versions_for_date.py` resolves the correct Ollama + model versions for any historical date.
 
-To verify whether the model you pulled still exhibits the defect, run:
+Reproduce the defect (pin Ollama to the first defective release):
 
 ```bash
+curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="0.14.0" sh
+ollama serve & sleep 5
+ollama pull mxbai-embed-large
 python -c "
-import ollama
-r1 = ollama.embed(model='mxbai-embed-large', input=['Hokkaidō'])
-r2 = ollama.embed(model='mxbai-embed-large', input=['Éire'])
-import numpy as np
-a, b = np.array(r1.embeddings[0]), np.array(r2.embeddings[0])
-cos = np.dot(a,b) / (np.linalg.norm(a) * np.linalg.norm(b))
-print(f'Hokkaidō vs Éire cosine: {cos:.4f}')
-if cos < 0.99:
-    print('Upstream model has been patched. Use model/ directory to reproduce tokenizer defect findings.')
-else:
-    print('Upstream model still exhibits the defect. You can use either.')
+import ollama, numpy as np
+a = np.array(ollama.embed(model='mxbai-embed-large', input=['Hokkaidō']).embeddings[0])
+b = np.array(ollama.embed(model='mxbai-embed-large', input=['Éire']).embeddings[0])
+cos = np.dot(a,b)/(np.linalg.norm(a)*np.linalg.norm(b))
+print(f'Hokkaidō vs Éire cosine: {cos:.4f}  (>=0.99 = defect present, as expected on v0.14.0+)')
 "
 ```
 
-Build the wrapped Ollama model used by the pipeline:
+To confirm it is a runtime regression, repeat with `OLLAMA_VERSION="0.13.4"`: the same model now returns a *low* cosine (healthy). If a future Ollama release reverts the regression, the current-Ollama CI job below records that as drift.
 
-```bash
-cd model/
-ollama create mxbai-embed-large -f Modelfile
-```
+### Two-sided regression CI
 
-If the upstream model has been patched, the `[UNK]` defect may no longer reproduce; the tokenizer-defect findings in the paper then describe the historical (pre-patch) behavior of mxbai-embed-large-v1.
-
-### Daily drift check (CI)
-
-A GitHub Actions workflow at `.github/workflows/collisions.yml` re-runs the Wikidata collision scan every day in two configurations: once against the Ollama + mxbai-embed-large versions current on the discovery date (2026-04-06, pinned at `OLLAMA_VERSION=0.6.5` and `mxbai-embed-large:335m`), and once against whatever the Ollama installer and registry currently serve. A third job diffs the two summary JSONs and annotates the run when collision rates move materially. The pinned job hard-fails if its baseline ever stops reproducing (which would mean an immutable tag was re-published); the current job runs in soft-fail mode (`LSC_SOFT_FAIL=1`) so that the eventual upstream patch shows up as a green run with a `DRIFT DETECTED` annotation rather than a red X. The two summary artifacts are retained for 90 days so the drift can be replayed later.
+A GitHub Actions workflow at `.github/workflows/collisions.yml` runs the Wikidata collision scan daily in three configurations and asserts **both sides** of the bisected boundary: a `clean-baseline` job on Ollama v0.13.4 that hard-fails if the defect appears where it should not (`LSC_EXPECT_CLEAN=1`), a `regression-repro` job on Ollama v0.14.0 that hard-fails if the defect stops reproducing, and a `current-drift` job on the latest Ollama in soft-fail mode (`LSC_SOFT_FAIL=1`) so an eventual upstream fix shows up as a green-with-`DRIFT` annotation rather than a red X. A report job tabulates all three. Summary artifacts are retained 90 days.
 
 ## Step 1: Setup
 
@@ -202,7 +192,7 @@ PHASE 4: FAILURE ANALYSIS
 
 ## Step 4: Collision and Density Analysis
 
-Description: Detect embedding collisions — distinct entities with near-identical vectors — caused by the `[UNK]` tokenizer defect.
+Description: Detect embedding collisions — distinct entities with near-identical vectors — produced by the Ollama-runtime diacritic-collapse regression (`[UNK]`-dominated attractor; present on Ollama ≥ v0.14.0).
 
 ```bash
 python scripts/analyze_collisions.py --threshold 0.95 --k 10
@@ -365,11 +355,11 @@ python scripts/generate_pdf.py
 
 These failures are informative: they reveal what embedding spaces cannot represent as geometry, matching predictions from the KGE literature (Wang et al., 2014).
 
-### The Tokenizer Defect
+### The Diacritic-Collapse Regression
 
-The most practically significant finding. When mxbai-embed-large encounters characters with diacritical marks (o, u, i, etc.), these are absent from the WordPiece vocabulary and replaced with `[UNK]` tokens. For short inputs where most characters are OOV, the `[UNK]` token representation dominates the embedding, collapsing all such inputs to a single attractor region.
+The most practically significant finding. When mxbai-embed-large is served by **Ollama ≥ v0.14.0**, characters with diacritical marks (ō, ū, ī, etc.) are routed to `[UNK]` tokens; for short inputs where most characters are affected, the `[UNK]` representation dominates the embedding, collapsing all such inputs to a single attractor region. This is a serving-runtime regression, not a model flaw: the byte-identical model blob handles the same inputs correctly under Ollama ≤ v0.13.4. Bisected to the v0.13.5 → v0.14.0 release (2026-01-10); persists through current v0.24.0.
 
-**Impact:** Any RAG system, semantic search, or knowledge graph using mxbai-embed-large with non-ASCII input silently retrieves results from the `[UNK]` attractor instead of semantically relevant results. Standard benchmarks (MTEB) do not test for this.
+**Impact:** Any RAG system, semantic search, or knowledge graph serving mxbai-embed-large via Ollama ≥ v0.14.0 with non-ASCII input silently retrieves results from the `[UNK]` attractor instead of semantically relevant results — and has since 2026-01-10. Standard benchmarks (MTEB) do not test for this, and it is invisible at the model level.
 
 ## Dependencies
 
