@@ -3,11 +3,15 @@ name: Reproduce mxbai Collisions
 # Full reproducibility experiment for the mxbai-embed-large [UNK] token
 # defect — runs TWICE per cron and compares the two runs:
 #
-#   1. `pinned-reproduction` — Ollama and mxbai-embed-large frozen at the
-#      versions current on the discovery date (2026-04-06). This is the
-#      historical baseline that anchors the paper's claims. If the defect
-#      ever stops reproducing here, the pinned model has been re-published
-#      under the same digest — a real CI failure.
+#   1. `pinned-reproduction` — Ollama pinned to 0.6.5 (the runtime version
+#      current on the 2026-04-06 discovery date) with the model pulled via
+#      the same default `ollama pull mxbai-embed-large` the paper documents.
+#      The defect is a property of the Ollama GGUF tokenizer at that
+#      runtime version (the HF tokenizer strips accents; Ollama does not),
+#      so pinning the Ollama runtime is the meaningful reproducibility
+#      control — there is no immutable per-build model tag to pin to (the
+#      `:335m` tag is a *different, non-defective* build). Hard-fails if
+#      the defect ever stops reproducing in this discovery-date config.
 #
 #   2. `current-reproduction` — Ollama and mxbai-embed-large at whatever
 #      the Ollama installer/registry serve today. Soft-fail mode: if the
@@ -50,13 +54,14 @@ concurrency:
 env:
   # Ollama version current on the [UNK]-defect discovery date (2026-04-06).
   # The official installer respects OLLAMA_VERSION when set in the env.
-  # Bump only if the discovery-date claim moves — *not* to track upstream.
+  # This is the only thing pinned: the defect is a property of the Ollama
+  # GGUF tokenizer at this runtime version, not of a particular model-tag
+  # build. Both jobs pull the model with the same default command the
+  # paper documents (`ollama pull mxbai-embed-large`). The `:335m` tag was
+  # NOT a valid pin — it resolves to a different, non-defective build, and
+  # vendored weights / Modelfile were removed in cc05537. Bump this only
+  # if the discovery-date claim moves — *not* to track upstream.
   PINNED_OLLAMA_VERSION: "0.6.5"
-  # mxbai-embed-large tag pinned to the 335M-parameter v1 build. Ollama
-  # registry convention is that named-size tags (`:335m`) are immutable
-  # once published; only `:latest` floats. If mixedbread-ai ever re-cuts
-  # the 335M tag, the `pinned-reproduction` job below will catch it.
-  PINNED_MXBAI_TAG: "mxbai-embed-large:335m"
 
 jobs:
   pinned-reproduction:
@@ -89,13 +94,15 @@ jobs:
             sleep 1
           done
 
-      - name: Pull pinned mxbai (${{ env.PINNED_MXBAI_TAG }})
+      - name: Pull mxbai-embed-large (default tag, as the paper documents)
         run: |
-          ollama pull "${PINNED_MXBAI_TAG}"
-          # Re-tag as `mxbai-embed-large` because the scan script asks
-          # ollama for that name. Keeps the script identical between jobs.
-          ollama cp "${PINNED_MXBAI_TAG}" mxbai-embed-large
+          # Same command the paper / SKILL.md document. The pin is the
+          # Ollama runtime (0.6.5, set above), not the model tag — the
+          # defect is a property of the Ollama GGUF tokenizer at that
+          # runtime version.
+          ollama pull mxbai-embed-large
           ollama show mxbai-embed-large --modelfile | head -20 || true
+          ollama show mxbai-embed-large 2>/dev/null | grep -i digest || true
           ollama list
 
       - name: Run Wikidata collision scan (pinned)
