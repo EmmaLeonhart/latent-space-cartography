@@ -1,0 +1,225 @@
+name: Collision Bisect (Ollama version sweep)
+
+# Manual investigation: find which Ollama version the mxbai-embed-large
+# [UNK] diacritical-collision defect appears in. The old "0.6.5 =
+# 2026-04-06 baseline" pin was an off-by-one-year error (v0.6.5 shipped
+# 2025-04-06; the 2026-04-06 Ollama was ~v0.20.2). Instead of guessing,
+# this sweeps real stable releases across the timeline and records, for
+# each: the Ollama SERVER version actually running, the model manifest
+# digest actually pulled, and the diacritical / ASCII collision rates.
+#
+# Both variables are captured (Ollama runtime AND model blob) because
+# the defect is a property of their combination. Runs the scan in
+# soft-fail mode so every version reports data instead of going red.
+#
+# Dispatch only. Results land in the run summary as a table.
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: "Comma-separated Ollama versions to sweep (no leading v)"
+        required: false
+        default: "0.6.5,0.12.9,0.13.4,0.15.4,0.17.0,0.19.0,0.20.2,0.21.0,0.22.0,0.23.4,0.24.0"
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.gen.outputs.matrix }}
+    steps:
+      - id: gen
+        run: |
+          IFS=',' read -ra V <<< "${{ github.event.inputs.versions }}"
+          JSON=$(printf '%s\n' "${V[@]}" | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))")
+          echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Sweeping: $JSON"
+
+  scan:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        ollama: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install numpy
+        run: pip install --quiet numpy
+
+      - name: Install Ollama (pinned ${{ matrix.ollama }})
+        id: install
+        run: |
+          set +e
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${{ matrix.ollama }}" sh
+          echo "install_exit=$?" >> "$GITHUB_OUTPUT"
+          ollama --version || true
+
+      - name: Start Ollama daemon
+        run: |
+          nohup ollama serve > ollama.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:11434/api/tags > /dev/null; then
+              echo "Ollama is up"; break
+            fi
+            sleep 1
+          done
+
+      - name: Capture server version
+        id: server
+        run: |
+          # /api/version exists on modern Ollama; fall back to the CLI.
+          SV=$(curl -s http://localhost:11434/api/version | python3 -c "import sys,json;print(json.load(sys.stdin).get('version',''))" 2>/dev/null || true)
+          [ -z "$SV" ] && SV=$(ollama --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+          echo "server_version=$SV" >> "$GITHUB_OUTPUT"
+          echo "server version: $SV"
+
+      - name: Pull mxbai-embed-large + capture model digest
+        id: model
+        run: |
+          set +e
+          ollama pull mxbai-embed-large > pull.log 2>&1
+          echo "pull_exit=$?" >> "$GITHUB_OUTPUT"
+          tail -3 pull.log || true
+          MANIFEST="$HOME/.ollama/models/manifests/registry.ollama.ai/library/mxbai-embed-large/latest"
+          if [ -f "$MANIFEST" ]; then
+            DIGEST=$(sha256sum "$MANIFEST" | cut -d' ' -f1)
+            echo "manifest_sha256=$DIGEST" >> "$GITHUB_OUTPUT"
+            echo "manifest content:"; cat "$MANIFEST" | python3 -m json.tool || cat "$MANIFEST"
+          else
+            echo "manifest_sha256=MISSING" >> "$GITHUB_OUTPUT"
+          fi
+          ollama list || true
+
+      - name: Run collision scan (soft-fail)
+        env:
+          LSC_SOFT_FAIL: "1"
+        run: |
+          set +e
+          python scripts/wikidata_collision_scan.py
+          echo "scan_exit=$?"
+
+      - name: Build result JSON
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+          out = {
+              "ollama_input": "${{ matrix.ollama }}",
+              "server_version": "${{ steps.server.outputs.server_version }}",
+              "install_exit": "${{ steps.install.outputs.install_exit }}",
+              "pull_exit": "${{ steps.model.outputs.pull_exit }}",
+              "manifest_sha256": "${{ steps.model.outputs.manifest_sha256 }}",
+              "diacritical_rate": None, "diacritical_mean_cosine": None,
+              "ascii_rate": None, "ascii_mean_cosine": None,
+              "diacritical_collisions": None, "status": "no-summary",
+          }
+          p = pathlib.Path("wikidata_collision_summary.json")
+          if p.exists():
+              s = json.loads(p.read_text())
+              d = s["labels"]["diacritical"]; a = s["labels"]["ascii_control"]
+              out.update(
+                  diacritical_rate=d["collision_rate"],
+                  diacritical_mean_cosine=d["mean_cosine"],
+                  diacritical_collisions=d["collision_count"],
+                  ascii_rate=a["collision_rate"],
+                  ascii_mean_cosine=a["mean_cosine"],
+                  status="defect" if d["collision_rate"] >= 0.05 else "clean",
+              )
+          pathlib.Path("result.json").write_text(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2))
+          PY
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bisect-${{ matrix.ollama }}
+          path: |
+            result.json
+            wikidata_collision_summary.json
+          retention-days: 90
+
+  report:
+    needs: scan
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all results
+        uses: actions/download-artifact@v4
+        with:
+          path: results/
+          pattern: bisect-*
+
+      - name: Build sweep table
+        run: |
+          python3 - <<'PY'
+          import json, glob, os
+
+          rows = []
+          for f in sorted(glob.glob("results/bisect-*/result.json")):
+              rows.append(json.load(open(f)))
+
+          def vkey(s):
+              try:
+                  return tuple(int(x) for x in s.split("."))
+              except Exception:
+                  return (9999,)
+          rows.sort(key=lambda r: vkey(r["ollama_input"]))
+
+          hdr = (f"| {'ollama (req)':<12} | {'server':<8} | "
+                 f"{'diac rate':>9} | {'diac cos':>8} | {'diac n':>7} | "
+                 f"{'ascii rate':>10} | {'manifest sha256 (12)':<20} | status |")
+          sep = "|" + "|".join(["-" * w for w in (14,10,11,10,9,12,22,8)]) + "|"
+          lines = [hdr, sep]
+          for r in rows:
+              dr = r.get("diacritical_rate")
+              dc = r.get("diacritical_mean_cosine")
+              ar = r.get("ascii_rate")
+              dn = r.get("diacritical_collisions")
+              man = (r.get("manifest_sha256") or "")[:12]
+              lines.append(
+                  f"| {r['ollama_input']:<12} | {r.get('server_version',''):<8} | "
+                  f"{(f'{dr:.4f}' if isinstance(dr,(int,float)) else 'n/a'):>9} | "
+                  f"{(f'{dc:.3f}' if isinstance(dc,(int,float)) else 'n/a'):>8} | "
+                  f"{(str(dn) if dn is not None else 'n/a'):>7} | "
+                  f"{(f'{ar:.4f}' if isinstance(ar,(int,float)) else 'n/a'):>10} | "
+                  f"{man:<20} | {r.get('status','?')} |"
+              )
+
+          # Identify the regression boundary.
+          boundary = None
+          prev = None
+          for r in rows:
+              dr = r.get("diacritical_rate")
+              if isinstance(dr, (int, float)):
+                  cur = dr >= 0.05
+                  if prev is not None and cur and not prev[1]:
+                      boundary = (prev[0], r["ollama_input"])
+                  prev = (r["ollama_input"], cur)
+
+          table = "\n".join(lines)
+          print(table)
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          with open(summary, "a") as fh:
+              fh.write("## Collision bisect — Ollama version sweep\n\n")
+              fh.write(table + "\n\n")
+              if boundary:
+                  fh.write(f"**Defect appears between Ollama "
+                           f"`{boundary[0]}` (clean) and `{boundary[1]}` "
+                           f"(defect).**\n")
+              else:
+                  fh.write("_No clean->defect boundary detected in this "
+                           "sweep (all clean, all defect, or non-monotonic; "
+                           "widen or refine the version list)._\n")
+          PY
