@@ -87,7 +87,13 @@ scripts/
   compare_models.py       - Cross-model generalization analysis
   statistical_analysis.py - Bootstrap CIs, effect sizes, ablation
   generate_figures.py     - Publication figures
-  generate_pdf.py         - Compile paper PDF
+```
+
+`paper.pdf` is built from `paper.md` by `.github/workflows/paper-pdf.yml`
+(pandoc + latexmk with the NeurIPS 2026 style, `neurips_2026.sty` /
+`paper.tex`) and committed back to the repo and `docs/paper.pdf`.
+
+```
 data/                     - Generated data (gitignored, ~1GB for full run)
 ```
 

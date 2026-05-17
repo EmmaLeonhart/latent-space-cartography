@@ -38,29 +38,9 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install dependencies
-        run: pip install fpdf2
-
-      - name: Generate PDF
-        run: python scripts/generate_pdf.py
-
-      - name: Check if PDF changed
-        id: pdf_check
-        run: |
-          if git diff --quiet paper.pdf docs/paper.pdf 2>/dev/null; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Commit PDF if changed
-        if: steps.pdf_check.outputs.changed == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add paper.pdf docs/paper.pdf
-          git commit -m "Auto-generate paper.pdf from paper.md"
-          git push
+      # PDF generation moved to .github/workflows/paper-pdf.yml
+      # (NeurIPS-styled pandoc + latexmk build). publish.yml is now
+      # purely the clawRxiv submit + fetch-review pipeline.
 
       - name: Compute content hash
         id: content_hash
