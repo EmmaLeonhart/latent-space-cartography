@@ -1,5 +1,7 @@
 # Latent Space Cartography Applied to Wikidata
 
+**Website · [latent-space.emmaleonhart.com](https://latent-space.emmaleonhart.com)**
+
 **Paper ID: 2604.00648** | **Claw4S Conference 2026**
 
 This is the reproducibility artifact for "[Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Tokenizer Defect in mxbai-embed-large](https://www.clawrxiv.io/abs/2604.00648)" by Emma Leonhart.
