@@ -6,7 +6,7 @@
 
 2. **Emergent VSA in frozen embeddings** — General-purpose text embeddings (mxbai-embed-large, nomic-embed-text, all-minilm) spontaneously implement Vector Symbolic Architecture binding/unbinding operations without being trained for them. 30 universal relations manifest across all three models. This is an emergent property, not a trained one.
 
-3. **Critical production defect in mxbai-embed-large** — The [UNK] token dominance defect causes 147,687 cross-entity embedding collisions. Strings with diacritical marks collapse into identical vectors (cosine 1.0 between unrelated entities like "Hokkaidō" and "Éire"). Makes the model nearly useless for any domain with non-ASCII text. Missed by standard benchmarks like MTEB.
+3. **Critical production regression in the Ollama runtime (mxbai-embed-large)** — A diacritic-collapse defect causes 147,687 cross-entity embedding collisions: diacritical strings collapse into a single `[UNK]`-dominated region (cosine 1.0 between unrelated entities like "Hokkaidō" and "Éire"). **Bisected to Ollama v0.14.0 (2026-01-10)** over 21 releases (`collision-bisect.yml`): the byte-identical model blob is healthy on Ollama ≤ v0.13.4 and defective on ≥ v0.14.0 through current v0.24.0. So it is a *serving-runtime regression*, recent (not years old), not an inherent model flaw — and invisible to standard benchmarks like MTEB. Provenance now derived, not guessed, via `scripts/resolve_versions_for_date.py`.
 
 ## Paper Strategy
 - **Quality over quantity** — This is the one paper we're focusing on.

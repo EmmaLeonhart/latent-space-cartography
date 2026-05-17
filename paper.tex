@@ -81,9 +81,11 @@
 \newunicodechar{ş}{\c{s}}
 \newunicodechar{ū}{\=u}
 \newunicodechar{ṭ}{\d{t}}
-% Punctuation / dashes.
+% Punctuation / dashes. (pandoc --from=markdown-smart also emits … for
+% any literal "..." in the source, so this mapping is load-bearing.)
 \newunicodechar{–}{\textendash}
 \newunicodechar{—}{\textemdash}
+\newunicodechar{…}{\ldots}
 % Math-style symbols used in prose.
 \newunicodechar{×}{\ensuremath{\times}}
 \newunicodechar{→}{\ensuremath{\rightarrow}}

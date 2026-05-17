@@ -493,40 +493,57 @@ def main() -> None:
     print(f"\nSaved {SUMMARY_PATH}")
 
     # ── CI assertions ─────────────────────────────────────────────────────
-    # The defect is "present" if diacritical collisions greatly exceed the
-    # ASCII-control collision rate. If this ever stops being true on a daily
-    # run, something has changed — either the model was fixed or Ollama
-    # swapped in a differently-tokenised build.
+    # The diacritic-collapse defect is a regression in the Ollama runtime,
+    # bisected to v0.14.0 (2026-01-10): absent on Ollama <= v0.13.4, present
+    # on >= v0.14.0, with the identical mxbai-embed-large registry blob in
+    # every case. collisions.yml therefore runs a two-sided regression test:
     #
-    # Set LSC_SOFT_FAIL=1 to downgrade these hard failures to warnings. The
-    # collisions.yml workflow uses this on the "current-reproduction" job so
-    # that upstream-fixing-the-bug shows up as a drift annotation rather than
-    # a red X — the green-vs-red signal is reserved for the pinned-version
-    # job, where defect disappearance would mean the historical baseline has
-    # changed underfoot (which IS a real failure).
+    #   LSC_EXPECT_CLEAN=1  — used by the v0.13.4 baseline job. The model
+    #     MUST be healthy here (diacritical collisions ~0, like the ASCII
+    #     control). If the defect appears on v0.13.4, the model blob was
+    #     re-cut or the boundary moved — a real failure.
+    #
+    #   default             — used by the v0.14.0 reproduction job. The
+    #     defect MUST be present (diacritical rate >> ASCII control). If it
+    #     stops reproducing here the regression was reverted underfoot.
+    #
+    #   LSC_SOFT_FAIL=1     — used by the current-Ollama drift job. Either
+    #     assertion is downgraded to a DRIFT log line so an eventual
+    #     upstream fix shows up green-with-annotation, not red.
     soft_fail = os.environ.get("LSC_SOFT_FAIL") == "1"
+    expect_clean = os.environ.get("LSC_EXPECT_CLEAN") == "1"
     print("\n" + "=" * 72)
-    if d_stats["collision_rate"] < 0.05:
-        msg = (
+
+    def _assert(bad: bool, msg: str) -> None:
+        if not bad:
+            return
+        if soft_fail:
+            print(f"DRIFT: {msg}")
+        else:
+            print(f"FAIL: {msg}")
+            sys.exit(1)
+
+    if expect_clean:
+        _assert(
+            d_stats["collision_rate"] >= 0.05,
             f"diacritical collision rate {pct(d_stats['collision_rate'])} "
-            f"is implausibly low. The mxbai [UNK] defect may have been fixed."
+            f"is implausibly HIGH for a known-clean Ollama version. The "
+            f"diacritic-collapse regression has appeared where it should "
+            f"not — model blob re-cut, or the v0.14.0 boundary moved.",
         )
-        if soft_fail:
-            print(f"DRIFT: {msg}")
-        else:
-            print(f"FAIL: {msg}")
-            sys.exit(1)
-    if c_stats["collision_rate"] > 0.02:
-        msg = (
-            f"ASCII control collision rate {pct(c_stats['collision_rate'])} "
-            f"is suspiciously high. Something other than the [UNK] defect "
-            f"is firing."
+    else:
+        _assert(
+            d_stats["collision_rate"] < 0.05,
+            f"diacritical collision rate {pct(d_stats['collision_rate'])} "
+            f"is implausibly low. The Ollama diacritic-collapse regression "
+            f"may have been fixed upstream.",
         )
-        if soft_fail:
-            print(f"DRIFT: {msg}")
-        else:
-            print(f"FAIL: {msg}")
-            sys.exit(1)
+    _assert(
+        c_stats["collision_rate"] > 0.02,
+        f"ASCII control collision rate {pct(c_stats['collision_rate'])} "
+        f"is suspiciously high. Something other than the diacritic-collapse "
+        f"regression is firing.",
+    )
 
     # Ratio report — use raw (unrounded) counts so the figure is meaningful
     # when the control collision count is tiny. Fall back to an explicit

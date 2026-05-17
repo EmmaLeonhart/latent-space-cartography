@@ -1,38 +1,35 @@
 name: Reproduce mxbai Collisions
 
-# Full reproducibility experiment for the mxbai-embed-large [UNK] token
-# defect — runs TWICE per cron and compares the two runs:
+# Two-sided regression test for the diacritic-collapse defect.
 #
-#   1. `pinned-reproduction` — Ollama pinned to 0.6.5 (the runtime version
-#      current on the 2026-04-06 discovery date) with the model pulled via
-#      the same default `ollama pull mxbai-embed-large` the paper documents.
-#      The defect is a property of the Ollama GGUF tokenizer at that
-#      runtime version (the HF tokenizer strips accents; Ollama does not),
-#      so pinning the Ollama runtime is the meaningful reproducibility
-#      control — there is no immutable per-build model tag to pin to (the
-#      `:335m` tag is a *different, non-defective* build). Hard-fails if
-#      the defect ever stops reproducing in this discovery-date config.
+# The defect is NOT an inherent property of mxbai-embed-large and is
+# NOT years old. It is a regression in the Ollama runtime, bisected to
+# v0.14.0 (released 2026-01-10): the identical mxbai-embed-large
+# registry blob is healthy on Ollama <= v0.13.4 and defective on
+# >= v0.14.0 (verified by .github/workflows/collision-bisect.yml across
+# 21 Ollama releases). So we assert BOTH sides of the boundary:
 #
-#   2. `current-reproduction` — Ollama and mxbai-embed-large at whatever
-#      the Ollama installer/registry serve today. Soft-fail mode: if the
-#      defect has been patched upstream, the run records that as DRIFT
-#      rather than turning the workflow red. We want to *learn* of an
-#      upstream fix from a green CI run, not from one that's been red for
-#      a week.
+#   1. `clean-baseline`   — Ollama v0.13.4. The model MUST be healthy
+#      (diacritical collisions ~0, like the ASCII control). Runs the
+#      scan with LSC_EXPECT_CLEAN=1; a red here means the model blob
+#      was re-cut or the v0.14.0 boundary moved.
 #
-#   3. `compare-drift` — downloads both summary JSONs and diffs the
-#      collision rates / mean cosines. Always succeeds; the diff is an
-#      annotation. The point is: when current diverges from pinned, that
-#      is the moment a paper-relevant world-state change has happened.
+#   2. `regression-repro` — Ollama v0.14.0 (first defective release).
+#      The defect MUST reproduce (diacritical rate >> ASCII control).
+#      This is the stable, pinned reproduction the paper rests on.
 #
-# Scan internals (same script for both jobs):
+#   3. `current-drift`    — whatever Ollama the installer serves today,
+#      LSC_SOFT_FAIL=1. If upstream ever reverts the regression this
+#      goes green-with-DRIFT-annotation rather than red.
+#
+# Scan internals (same script for every job):
 #   - ~600-900 Wikidata settlements with diacritical native labels
-#     (cs/pl/vi/de/fr/ro/hu/tr/sk/pt/es/is) + ~300 ASCII-control settlements
-#   - Embed via Ollama, compute pairwise cosines, count collisions at 0.95
-#   - Fails if diacritical collision rate < 5% or ASCII control > 2%,
-#     unless LSC_SOFT_FAIL=1 (the `current` job sets this).
+#     (cs/pl/vi/de/fr/ro/hu/tr/sk/pt/es/is) + ~300 ASCII-control ones
+#   - Embed via Ollama, compute pairwise cosines, count collisions @0.95
+#   - Healthy: diacritical rate ~= ASCII control (~0). Defective:
+#     diacritical rate ~10-11%, ASCII control ~0.
 #
-# Triggers: daily cron 07:13 UTC, on-push to the script/workflow, manual.
+# Triggers: daily cron 07:13 UTC, on-push to script/workflow, manual.
 
 on:
   schedule:
@@ -52,110 +49,118 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Ollama version current on the [UNK]-defect discovery date (2026-04-06).
-  # The official installer respects OLLAMA_VERSION when set in the env.
-  # This is the only thing pinned: the defect is a property of the Ollama
-  # GGUF tokenizer at this runtime version, not of a particular model-tag
-  # build. Both jobs pull the model with the same default command the
-  # paper documents (`ollama pull mxbai-embed-large`). The `:335m` tag was
-  # NOT a valid pin — it resolves to a different, non-defective build, and
-  # vendored weights / Modelfile were removed in cc05537. Bump this only
-  # if the discovery-date claim moves — *not* to track upstream.
-  PINNED_OLLAMA_VERSION: "0.6.5"
+  # Last Ollama release BEFORE the regression (2025-12-13). Model is
+  # healthy here. Bump only if the bisected boundary itself moves.
+  CLEAN_OLLAMA_VERSION: "0.13.4"
+  # First Ollama release WITH the regression (2026-01-10). Stable
+  # pinned reproduction of the paper's finding.
+  DEFECT_OLLAMA_VERSION: "0.14.0"
 
 jobs:
-  pinned-reproduction:
-    name: Pinned reproduction (2026-04-06 baseline)
+  clean-baseline:
+    name: Clean baseline (Ollama v0.13.4 — must be healthy)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
       - name: Install numpy
         run: pip install --quiet numpy
-
-      - name: Install Ollama (pinned ${{ env.PINNED_OLLAMA_VERSION }})
+      - name: Install Ollama (pinned ${{ env.CLEAN_OLLAMA_VERSION }})
         run: |
-          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${PINNED_OLLAMA_VERSION}" sh
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${CLEAN_OLLAMA_VERSION}" sh
           ollama --version
-
       - name: Start Ollama daemon
         run: |
           nohup ollama serve > ollama.log 2>&1 &
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:11434/api/tags > /dev/null; then
-              echo "Ollama is up"
-              break
-            fi
+            curl -sf http://localhost:11434/api/tags > /dev/null && { echo "Ollama is up"; break; }
             sleep 1
           done
-
-      - name: Pull mxbai-embed-large (default tag, as the paper documents)
+      - name: Pull mxbai-embed-large
         run: |
-          # Same command the paper / SKILL.md document. The pin is the
-          # Ollama runtime (0.6.5, set above), not the model tag — the
-          # defect is a property of the Ollama GGUF tokenizer at that
-          # runtime version.
           ollama pull mxbai-embed-large
-          ollama show mxbai-embed-large --modelfile | head -20 || true
-          ollama show mxbai-embed-large 2>/dev/null | grep -i digest || true
           ollama list
-
-      - name: Run Wikidata collision scan (pinned)
+      - name: Run scan (expect CLEAN — fail if the defect appears here)
+        env:
+          LSC_EXPECT_CLEAN: "1"
         run: python scripts/wikidata_collision_scan.py
-
-      - name: Upload pinned summary
+      - name: Upload clean-baseline summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: wikidata-collision-summary-pinned
+          name: wikidata-collision-summary-clean
           path: wikidata_collision_summary.json
           retention-days: 90
 
-  current-reproduction:
-    name: Current reproduction (upstream drift detector)
+  regression-repro:
+    name: Regression reproduction (Ollama v0.14.0 — must show defect)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
       - name: Install numpy
         run: pip install --quiet numpy
+      - name: Install Ollama (pinned ${{ env.DEFECT_OLLAMA_VERSION }})
+        run: |
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${DEFECT_OLLAMA_VERSION}" sh
+          ollama --version
+      - name: Start Ollama daemon
+        run: |
+          nohup ollama serve > ollama.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:11434/api/tags > /dev/null && { echo "Ollama is up"; break; }
+            sleep 1
+          done
+      - name: Pull mxbai-embed-large
+        run: |
+          ollama pull mxbai-embed-large
+          ollama list
+      - name: Run scan (expect DEFECT — fail if it stops reproducing)
+        run: python scripts/wikidata_collision_scan.py
+      - name: Upload regression-repro summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wikidata-collision-summary-repro
+          path: wikidata_collision_summary.json
+          retention-days: 90
 
+  current-drift:
+    name: Current Ollama (drift detector, soft-fail)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install numpy
+        run: pip install --quiet numpy
       - name: Install Ollama (current)
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama --version
-
       - name: Start Ollama daemon
         run: |
           nohup ollama serve > ollama.log 2>&1 &
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:11434/api/tags > /dev/null; then
-              echo "Ollama is up"
-              break
-            fi
+            curl -sf http://localhost:11434/api/tags > /dev/null && { echo "Ollama is up"; break; }
             sleep 1
           done
-
-      - name: Pull current mxbai-embed-large (:latest)
+      - name: Pull mxbai-embed-large
         run: |
           ollama pull mxbai-embed-large
           ollama list
-
-      - name: Run Wikidata collision scan (current, soft-fail)
+      - name: Run scan (soft-fail — reports drift, never red)
         env:
           LSC_SOFT_FAIL: "1"
         run: python scripts/wikidata_collision_scan.py
-
       - name: Upload current summary
         if: always()
         uses: actions/upload-artifact@v4
@@ -164,81 +169,58 @@ jobs:
           path: wikidata_collision_summary.json
           retention-days: 90
 
-  compare-drift:
-    name: Compare pinned vs current
+  report:
+    name: Boundary report
     runs-on: ubuntu-latest
-    needs: [pinned-reproduction, current-reproduction]
-    if: always() && needs.pinned-reproduction.result == 'success'
+    needs: [clean-baseline, regression-repro, current-drift]
+    if: always()
     steps:
-      - name: Download pinned summary
+      - name: Download summaries
         uses: actions/download-artifact@v4
         with:
-          name: wikidata-collision-summary-pinned
-          path: pinned/
-
-      - name: Download current summary
-        uses: actions/download-artifact@v4
-        with:
-          name: wikidata-collision-summary-current
-          path: current/
-
-      - name: Diff pinned vs current
+          path: summaries/
+          pattern: wikidata-collision-summary-*
+      - name: Compare clean / repro / current
         run: |
           python - <<'PY'
           import json, os, pathlib
 
-          pinned = json.loads(pathlib.Path("pinned/wikidata_collision_summary.json").read_text())
-          current = json.loads(pathlib.Path("current/wikidata_collision_summary.json").read_text())
+          def load(name):
+              p = pathlib.Path(f"summaries/wikidata-collision-summary-{name}/wikidata_collision_summary.json")
+              return json.loads(p.read_text()) if p.exists() else None
 
-          def rate(s, group):
-              return s["labels"][group]["collision_rate"]
-          def cos(s, group):
-              return s["labels"][group]["mean_cosine"]
-
-          rows = []
-          for group in ("diacritical", "ascii_control"):
-              rows.append((
-                  group,
-                  rate(pinned, group), rate(current, group),
-                  cos(pinned, group), cos(current, group),
-              ))
-
+          labels = [("clean", "v0.13.4 (clean baseline)"),
+                    ("repro", "v0.14.0 (regression repro)"),
+                    ("current", "current Ollama")]
           print("=" * 72)
-          print("DRIFT REPORT: pinned (2026-04-06) vs current")
-          print("=" * 72)
-          print(f"{'group':<16} {'rate_pinned':>12} {'rate_current':>13} "
-                f"{'cos_pinned':>11} {'cos_current':>12}")
-          for g, rp, rc, cp, cc in rows:
-              print(f"{g:<16} {rp:>12.4f} {rc:>13.4f} {cp:>11.4f} {cc:>12.4f}")
+          print(f"{'config':<28} {'diac_rate':>10} {'diac_cos':>9} {'ascii_rate':>11}")
+          out = ["## Diacritic-collapse boundary report", "",
+                 "| config | diac rate | diac cos | ascii rate |",
+                 "|---|---|---|---|"]
+          rates = {}
+          for key, desc in labels:
+              s = load(key)
+              if not s:
+                  print(f"{desc:<28} {'(missing)':>10}")
+                  out.append(f"| {desc} | (missing) | | |")
+                  continue
+              d = s["labels"]["diacritical"]; a = s["labels"]["ascii_control"]
+              rates[key] = d["collision_rate"]
+              print(f"{desc:<28} {d['collision_rate']:>10.4f} "
+                    f"{d['mean_cosine']:>9.3f} {a['collision_rate']:>11.4f}")
+              out.append(f"| {desc} | {d['collision_rate']:.4f} | "
+                         f"{d['mean_cosine']:.3f} | {a['collision_rate']:.4f} |")
 
-          # Soft annotations when rates move materially (>5 percentage points
-          # on the diacritical group, or >1 point on the ASCII control).
-          drift = []
-          d_pin = rate(pinned, "diacritical")
-          d_cur = rate(current, "diacritical")
-          if abs(d_pin - d_cur) > 0.05:
-              drift.append(
-                  f"diacritical collision rate moved {d_pin:.3f} → {d_cur:.3f}"
-              )
-          c_pin = rate(pinned, "ascii_control")
-          c_cur = rate(current, "ascii_control")
-          if abs(c_pin - c_cur) > 0.01:
-              drift.append(
-                  f"ASCII control rate moved {c_pin:.3f} → {c_cur:.3f}"
-              )
-
-          if drift:
-              print()
-              print("UPSTREAM DRIFT DETECTED:")
-              for d in drift:
-                  print(f"  - {d}")
-              gh_out = os.environ.get("GITHUB_STEP_SUMMARY")
-              if gh_out:
-                  with open(gh_out, "a") as f:
-                      f.write("## Upstream drift detected\n\n")
-                      for d in drift:
-                          f.write(f"- {d}\n")
-          else:
-              print()
-              print("No material drift: current run matches the pinned baseline.")
+          out.append("")
+          if "current" in rates and "repro" in rates:
+              if rates["current"] < 0.05 <= rates["repro"]:
+                  out.append("**UPSTREAM DRIFT: the regression no longer "
+                             "reproduces on current Ollama — it appears to "
+                             "have been fixed. Update the paper's status.**")
+              else:
+                  out.append("_Current Ollama still exhibits the regression "
+                             "(expected)._")
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              pathlib.Path(summary).write_text("\n".join(out) + "\n")
           PY
