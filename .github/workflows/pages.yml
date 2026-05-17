@@ -1,10 +1,20 @@
 name: Deploy GitHub Pages
 
+# Builds the NeurIPS-styled paper.pdf and deploys the docs/ site with
+# it. The PDF is built fresh in the runner and bundled into the Pages
+# artifact — it is NEVER committed back to the repo (paper.pdf and
+# docs/paper.pdf are gitignored build outputs). The only way to get
+# the PDF is the download link on the Pages site.
+
 on:
   push:
     branches: [master, main]
     paths:
       - "docs/**"
+      - "paper.md"
+      - "paper.tex"
+      - "neurips_2026.sty"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -24,6 +34,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install TeX Live + pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            lmodern \
+            latexmk \
+            pandoc
+
+      - name: Build NeurIPS-styled paper.pdf
+        run: |
+          # Pre-process paper.md (strip H1 title + byline, strip manual
+          # section numbers so LaTeX numbering doesn't double them, tag
+          # Abstract/References unnumbered), pandoc -> LaTeX body,
+          # latexmk -> paper.pdf. paper.md on disk is untouched.
+          sed \
+            -e '1{/^# /d}' \
+            -e '/^\*\*Emma Leonhart\*\*$/d' \
+            -e 's|^## [0-9]\+\. |## |' \
+            -e 's|^### [0-9]\+\.[0-9]\+ |### |' \
+            -e 's|^## Abstract$|## Abstract {-}|' \
+            -e 's|^## References$|## References {-}|' \
+            paper.md > paper-pre.md
+          pandoc paper-pre.md \
+            --from=markdown-smart \
+            --to=latex \
+            --output=paper.tex.body \
+            --wrap=preserve \
+            --no-highlight \
+            --shift-heading-level-by=-1
+          latexmk -pdf -interaction=nonstopmode -e '$max_repeat=8' paper.tex
+          # Bundle the freshly built PDF into the site root (ephemeral,
+          # runner-only — not committed).
+          cp paper.pdf docs/paper.pdf
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
