@@ -10,6 +10,7 @@ Output: papers/fol-discovery/paper.pdf
 import io
 import sys
 import re
+import shutil
 from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -20,6 +21,8 @@ PAPER_DIR = Path(__file__).resolve().parent.parent
 PAPER_MD = PAPER_DIR / "paper.md"
 FIG_DIR = PAPER_DIR / "figures"
 OUTPUT_PDF = PAPER_DIR / "paper.pdf"
+# Mirror copy served by the GitHub Pages site (docs/ is the Pages root).
+DOCS_PDF = PAPER_DIR / "docs" / "paper.pdf"
 
 # Map figure references to files and where to insert them
 FIGURE_INSERTIONS = {
@@ -253,6 +256,11 @@ def main():
     pdf.output(str(OUTPUT_PDF))
     print(f"PDF saved to: {OUTPUT_PDF}")
     print(f"Pages: {pdf.page_no()}")
+
+    # Keep the site's downloadable copy in sync with the canonical PDF.
+    DOCS_PDF.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(OUTPUT_PDF, DOCS_PDF)
+    print(f"PDF mirrored to: {DOCS_PDF}")
 
 
 if __name__ == "__main__":

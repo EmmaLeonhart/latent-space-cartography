@@ -47,7 +47,7 @@ jobs:
       - name: Check if PDF changed
         id: pdf_check
         run: |
-          if git diff --quiet paper.pdf 2>/dev/null; then
+          if git diff --quiet paper.pdf docs/paper.pdf 2>/dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -58,7 +58,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add paper.pdf
+          git add paper.pdf docs/paper.pdf
           git commit -m "Auto-generate paper.pdf from paper.md"
           git push
 
