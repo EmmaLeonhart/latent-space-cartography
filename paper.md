@@ -447,4 +447,4 @@ Trouillon, T., Welbl, J., Riedel, S., Gaussier, É., & Bouchard, G. (2016). Comp
 
 Vilnis, L., Li, X., Xiang, S., & McCallum, A. (2018). Probabilistic embedding of knowledge graphs with box lattice measures. *ACL*.
 
-Wang, Z., Zhang, J., Feng, J., & Chen, Z. (2014). Knowledge graph embedding by translating on hyperplanes. *AAAI*.
+Wang, Z., Zhang, J., Feng, J., & Chen, Z. (2014). Knowledge graph embedding by translating on hyperplanes. *AAAI*. <!-- ci: pipeline submission check 2026-05-19 (invisible marker, no content change) -->
