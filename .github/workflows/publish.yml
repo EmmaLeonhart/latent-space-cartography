@@ -18,6 +18,11 @@ on:
         description: "Post ID to supersede (leave empty to auto-supersede last submission)"
         required: false
         type: string
+      force_submit:
+        description: "Submit even if paper.md/SKILL.md content hash is unchanged (use to verify the pipeline)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -29,6 +34,7 @@ jobs:
       post_id: ${{ steps.submit.outputs.post_id }}
       paper_id: ${{ steps.submit.outputs.paper_id }}
       submitted: ${{ steps.submit.outputs.submitted }}
+      recorded: ${{ steps.submit.outputs.recorded }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,7 +57,10 @@ jobs:
       - name: Check if submission needed
         id: submit_check
         run: |
-          if [ -f .last_submitted_hash ] && [ "$(cat .last_submitted_hash)" = "${{ steps.content_hash.outputs.hash }}" ]; then
+          if [ "${{ github.event.inputs.force_submit }}" = "true" ]; then
+            echo "force_submit requested — bypassing content-hash gate"
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          elif [ -f .last_submitted_hash ] && [ "$(cat .last_submitted_hash)" = "${{ steps.content_hash.outputs.hash }}" ]; then
             echo "needed=false" >> "$GITHUB_OUTPUT"
           else
             echo "needed=true" >> "$GITHUB_OUTPUT"
@@ -64,25 +73,87 @@ jobs:
           CLAWRXIV_API_KEY: ${{ secrets.CLAWRXIV_API_KEY }}
         run: |
           python - <<'PYEOF'
-          import json, re, urllib.request, os, sys
+          import json, re, urllib.request, urllib.error, os, sys
 
+          # clawRxiv changed its revision API (2026-05-18): the old
+          # `POST /api/posts` + `supersedes` field now 409s
+          # ("already been revised" / "duplicate detected"). The
+          # current API is `POST /api/posts/{id}/revise`, and a 409
+          # body carries `data.duplicateId` naming the canonical
+          # live post. This step mirrors that contract.
           API_KEY = os.environ.get("CLAWRXIV_API_KEY", "")
+          GH_OUT = os.environ["GITHUB_OUTPUT"]
+          CLAWRXIV_BASE = "https://clawrxiv.io"
+
+          def out(**kw):
+              with open(GH_OUT, "a") as f:
+                  for k, v in kw.items():
+                      f.write(f"{k}={v}\n")
+
           if not API_KEY:
               print("No CLAWRXIV_API_KEY set — skipping submission")
-              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                  f.write("submitted=false\n")
+              out(submitted="false", recorded="false")
               sys.exit(0)
 
-          supersedes = "${{ inputs.supersedes }}".strip()
+          class SupersedeConflict(RuntimeError):
+              """HTTP 409 from clawRxiv (stale supersede target, or
+              dedup). Carries the parsed JSON body so callers can
+              follow data.duplicateId to the canonical live post."""
+              def __init__(self, message, body=None):
+                  super().__init__(message)
+                  self.body = body or {}
+              def duplicate_id(self):
+                  v = (self.body.get("data") or {}).get("duplicateId")
+                  if isinstance(v, bool):
+                      return None
+                  if isinstance(v, int):
+                      return v
+                  if isinstance(v, str) and v.isdigit():
+                      return int(v)
+                  return None
 
-          # Check for existing post ID to supersede automatically
+          def post_json(url, payload):
+              data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+              req = urllib.request.Request(
+                  url, data=data,
+                  headers={
+                      "Content-Type": "application/json",
+                      "Authorization": f"Bearer {API_KEY}",
+                  },
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      return json.loads(resp.read())
+              except urllib.error.HTTPError as e:
+                  err_body = e.read().decode("utf-8", errors="replace") if e.fp else ""
+                  if e.code == 409:
+                      try:
+                          parsed = json.loads(err_body)
+                      except (ValueError, TypeError):
+                          parsed = {}
+                      raise SupersedeConflict(
+                          f"clawRxiv HTTP 409: {err_body}", body=parsed
+                      ) from e
+                  raise RuntimeError(
+                      f"clawRxiv request failed: HTTP {e.code}: {err_body}"
+                  ) from e
+
+          def create_post(payload):
+              return post_json(f"{CLAWRXIV_BASE}/api/posts", payload)
+
+          def revise_post(post_id, payload):
+              return post_json(
+                  f"{CLAWRXIV_BASE}/api/posts/{post_id}/revise", payload
+              )
+
+          supersedes = "${{ inputs.supersedes }}".strip()
           if not supersedes:
               try:
                   with open(".post_id", "r") as f:
                       supersedes = f.read().strip()
-                      print(f"Auto-superseding post {supersedes}")
               except FileNotFoundError:
-                  pass
+                  supersedes = ""
 
           with open("paper.md", "r") as f:
               content = f.read()
@@ -100,47 +171,77 @@ jobs:
               "tags": ["embedding-spaces", "knowledge-graphs", "vector-arithmetic", "tokenizer-failures", "neuro-symbolic"],
               "human_names": ["Emma Leonhart"],
           }
-          if supersedes:
-              payload["supersedes"] = int(supersedes)
 
-          data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-          req = urllib.request.Request(
-              "https://clawrxiv.io/api/posts",
-              data=data,
-              headers={
-                  "Content-Type": "application/json",
-                  "Authorization": f"Bearer {API_KEY}",
-              },
-              method="POST",
-          )
+          def emit_success(resp):
+              print(f"Published: {json.dumps(resp, indent=2)[:1500]}")
+              post_id = str(resp.get("id") or resp.get("postId") or "")
+              paper_id = str(resp.get("paper_id") or resp.get("paperId") or "")
+              if not post_id:
+                  print(f"ERROR: response has no id/postId: {json.dumps(resp)[:500]}", file=sys.stderr)
+                  out(submitted="false", recorded="false")
+                  sys.exit(1)
+              out(post_id=post_id, paper_id=paper_id,
+                  submitted="true", recorded="true")
+              sys.exit(0)
+
           try:
-              with urllib.request.urlopen(req) as resp:
-                  result = json.loads(resp.read())
-                  print(f"Published: {json.dumps(result, indent=2)}")
-                  post_id = str(result.get("id", ""))
-                  paper_id = str(result.get("paper_id", ""))
-                  with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                      f.write(f"post_id={post_id}\n")
-                      f.write(f"paper_id={paper_id}\n")
-                      f.write("submitted=true\n")
-          except urllib.error.HTTPError as e:
-              body = e.read().decode()
-              print(f"Submission failed ({e.code}): {body}", file=sys.stderr)
-              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                  f.write("submitted=false\n")
+              if supersedes:
+                  print(f"Revising existing post {supersedes} (POST /api/posts/{supersedes}/revise)")
+                  resp = revise_post(supersedes, payload)
+              else:
+                  print("Creating NEW clawRxiv post (no .post_id found)")
+                  resp = create_post(payload)
+          except SupersedeConflict as e:
+              dup = e.duplicate_id()
+              if dup is None:
+                  print(f"ERROR: clawRxiv 409 with no data.duplicateId to recover from:\n  {e}", file=sys.stderr)
+                  out(submitted="false", recorded="false")
+                  sys.exit(1)
+              # clawRxiv's dedup response names the canonical live
+              # post. Follow it and revise THAT — deterministic
+              # self-heal of a stale/drifted .post_id from the API.
+              print(f"WARNING: clawRxiv says the live version of this work is post {dup} (HTTP 409). Revising post {dup}.", file=sys.stderr)
+              try:
+                  resp = revise_post(dup, payload)
+              except SupersedeConflict as e2:
+                  # Even revising the canonical is a duplicate: the
+                  # manuscript is not substantively different from
+                  # what is already on clawRxiv. No-op, not a
+                  # failure — pin .post_id and succeed.
+                  pin = e2.duplicate_id() or dup
+                  print(f"NOTE: clawRxiv finds no substantive change vs post {pin}; treating as up-to-date and pinning .post_id={pin}.", file=sys.stderr)
+                  out(post_id=str(pin), submitted="false", recorded="true")
+                  sys.exit(0)
+              except Exception as e2:  # noqa: BLE001
+                  print(f"ERROR: revising canonical post {dup} failed: {e2}", file=sys.stderr)
+                  out(submitted="false", recorded="false")
+                  sys.exit(1)
+          except Exception as e:  # noqa: BLE001
+              print(f"ERROR: {e}", file=sys.stderr)
+              out(submitted="false", recorded="false")
               sys.exit(1)
+
+          emit_success(resp)
           PYEOF
 
       - name: Save post ID and submission hash
-        if: steps.submit.outputs.submitted == 'true'
+        if: steps.submit.outputs.recorded == 'true'
         run: |
           echo "${{ steps.submit.outputs.post_id }}" > .post_id
-          echo "${{ steps.submit.outputs.paper_id }}" > .paper_id
+          if [ -n "${{ steps.submit.outputs.paper_id }}" ]; then
+            echo "${{ steps.submit.outputs.paper_id }}" > .paper_id
+          fi
           echo "${{ steps.content_hash.outputs.hash }}" > .last_submitted_hash
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .post_id .paper_id .last_submitted_hash
-          git commit -m "Record submission: post ${{ steps.submit.outputs.post_id }} (paper ${{ steps.submit.outputs.paper_id }})" || true
+          git add .post_id .last_submitted_hash
+          [ -f .paper_id ] && git add .paper_id || true
+          MSG="Record submission: post ${{ steps.submit.outputs.post_id }}"
+          if [ -n "${{ steps.submit.outputs.paper_id }}" ]; then
+            MSG="$MSG (paper ${{ steps.submit.outputs.paper_id }})"
+          fi
+          git commit -m "$MSG" || true
+          git pull --rebase origin "${{ github.ref_name }}" || true
           git push || true
 
   fetch-review:
