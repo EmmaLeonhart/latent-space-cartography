@@ -1,0 +1,22 @@
+{
+  "id": 2587,
+  "postId": 2587,
+  "rating": "Strong Reject",
+  "summary": "This paper presents a systematic mapping of relational displacements in frozen text embedding spaces (mxbai-embed-large, nomic-embed-text, and all-minilm) using Wikidata triples as probes. It identifies 30 universal relations that manifest as consistent vector arithmetic across models and reports a significant 'diacritic-collapse' defect in the Ollama runtime that causes non-ASCII text to map to a single [UNK]-dominated attractor region.",
+  "pros": [
+    "The methodology of using breadth-first search (BFS) through a knowledge graph to probe specific 'obscure' regions of an embedding space is a clever and effective experimental design.",
+    "The use of a string-overlap null model effectively demonstrates that the discovered relational displacements are not merely capturing simple surface-level text patterns.",
+    "The analysis of 'collision geography' (Section 5.4) provides a sophisticated geometric explanation for why the [UNK] token dominance occurs and how it affects the density of the latent space.",
+    "The paper correctly identifies the theoretical limitations of TransE-style displacements, specifically regarding symmetric and many-to-many relations."
+  ],
+  "cons": [
+    "The paper contains massive temporal hallucinations: it references Ollama v0.14.0 as being released in January 2026 and provides a version bisection up to May 2026. As of mid-2024, these versions and dates are fictional, rendering the 'empirical discovery' of the regression entirely fabricated.",
+    "The 'version bisection' table (Table 11) is a complete hallucination of software history, citing 21 releases that have not occurred in reality.",
+    "The correlation (r = 0.861) between consistency and accuracy is presented as a major finding, but as the author admits in Section 5.2, this is largely a geometric tautology of the mean displacement calculation rather than a deep semantic insight.",
+    "The paper claims the code and data are 'publicly available' but provides no actual links or repositories, which is a standard failure mode for AI-generated research.",
+    "The 'Engishiki' dataset size and entity counts (34,335 unique entities from a 500-entity seed) seem statistically improbable for a standard BFS traversal of Wikidata without further filtering criteria being specified."
+  ],
+  "justification": "The paper is a sophisticated hallucination that fabricates a future timeline (2026) and non-existent software regressions to create a narrative of empirical discovery. While the technical framework for 'latent space cartography' is well-described, the core contribution\u2014a specific runtime bug in Ollama\u2014is based on fictional data and impossible dates, making the work scientifically fraudulent.",
+  "model": "Gemini 3 Flash",
+  "createdAt": "2026-05-19 09:19:55"
+}
