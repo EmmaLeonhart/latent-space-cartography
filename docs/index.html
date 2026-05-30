@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Latent Space Cartography</title>
-<meta name="description" content="Vector Symbolic Architecture analysis of frozen text embeddings over Wikidata — and the silent tokenizer defect it uncovered in mxbai-embed-large.">
+<meta name="description" content="TransE-style relational displacement analysis of frozen text embeddings over Wikidata — and the silent diacritic-collapse regression it uncovered in mxbai-embed-large.">
 <link rel="canonical" href="https://latent-space.emmaleonhart.com/">
 <style>
   :root {
@@ -104,9 +104,9 @@
 
 <h1>Latent Space Cartography</h1>
 <p class="lede">
-  Applying Vector Symbolic Architecture (VSA) / hyperdimensional computing
-  analysis to <strong>frozen</strong> general-purpose text embeddings over
-  Wikidata. Chains of logical inference run as cheap vector operations on
+  Applying standard TransE-style relational displacement analysis to
+  <strong>frozen</strong> general-purpose text embeddings over
+  Wikidata. Relations run as cheap vector displacements on
   embeddings that were never trained for them &mdash; and along the way the
   work surfaced a silent production defect that makes
   <code>mxbai-embed-large</code> nearly useless for any text with diacritics.
@@ -126,8 +126,8 @@
     <div class="kicker">Download</div>
     <div class="title">The paper (PDF)</div>
     <div class="desc">
-      Full write-up: relational displacement analysis, emergent VSA, and the
-      tokenizer defect. NeurIPS-styled typeset PDF.
+      Full write-up: relational displacement analysis, cross-model relations,
+      and the tokenizer defect. NeurIPS-styled typeset PDF.
       <span class="arrow">&darr;</span>
     </div>
   </a>
@@ -144,20 +144,20 @@
 <h2>The three contributions</h2>
 <div class="pillars">
   <div class="pillar">
-    <h3>1 &middot; HDC inference on frozen embeddings</h3>
+    <h3>1 &middot; Relational inference on frozen embeddings</h3>
     <p>
-      Multi-hop logical inference implemented as binding / unbinding vector
-      operations on existing embeddings &mdash; orders of magnitude cheaper
-      than full model inference.
+      Relations implemented as displacement-vector operations
+      (<code>h + r &asymp; t</code>) on existing embeddings &mdash; orders of
+      magnitude cheaper than full model inference.
     </p>
   </div>
   <div class="pillar">
-    <h3>2 &middot; Emergent VSA, not trained</h3>
+    <h3>2 &middot; Cross-model relational structure</h3>
     <p>
       Three independent general-purpose models (mxbai-embed-large,
-      nomic-embed-text, all-minilm) spontaneously implement the same 30
-      universal relational operations &mdash; an emergent property, not a
-      trained one.
+      nomic-embed-text, all-minilm) encode the same 30 universal relations as
+      consistent vector displacements &mdash; a property of the semantic
+      relationships, not any single model.
     </p>
   </div>
   <div class="pillar defect">

@@ -956,7 +956,7 @@ python scripts/generate_defect_page.py</code></pre>
 <p>
   This defect was discovered during the
   <a href="https://github.com/EmmaLeonhart/latent-space-cartography">Latent Space Cartography</a>
-  project, which applies Vector Symbolic Architecture (VSA) analysis to frozen text embeddings.
+  project, which applies TransE-style relational displacement analysis to frozen text embeddings.
   When probing Wikidata entity embeddings for relational structure, the collision pattern was
   unmistakable: 147,687 cross-entity pairs at cosine &ge; 0.95, all involving diacritical text.
   The full analysis is documented in our paper
@@ -1225,14 +1225,15 @@ python scripts/demo_collisions.py
 <p>
   This defect was discovered during the
   <a href="https://github.com/EmmaLeonhart/latent-space-cartography">Latent Space Cartography</a>
-  project, which applies Vector Symbolic Architecture (VSA) analysis to frozen text embeddings.
+  project, which applies TransE-style relational displacement analysis to frozen text embeddings.
   When probing Wikidata entity embeddings for relational structure, the collision pattern was
   unmistakable: 147,687 cross-entity pairs at cosine &ge; 0.95, all involving diacritical text.
 </p>
 <p>
   The full analysis is documented in our paper:
-  <em>"Emergent Vector Symbolic Operations in Frozen Text Embeddings"</em>
-  (clawRxiv 2604.00859).
+  <em>"Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis
+  Reveals a Silent Diacritic-Collapse Regression in the Ollama Runtime (mxbai-embed-large)"</em>
+  (clawRxiv 2604.01127).
 </p>
 
 <footer>

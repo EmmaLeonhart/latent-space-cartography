@@ -1,10 +1,10 @@
-# Latent Space Cartography → Hyperdimensional Computing Paper
+# Latent Space Cartography → Relational Displacement Analysis Paper
 
 ## Three Pillars (the core contributions)
 
-1. **HDC framework for logical inference on frozen embeddings** — Chains of logical inference implemented as vector operations on existing general-purpose embeddings. Massively cheaper than full model inference. The displacement vectors are binding/unbinding operators, and composition (multi-hop) is sequential binding.
+1. **Relational displacement inference on frozen embeddings** — Relations implemented as TransE-style displacement-vector operations (`h + r ≈ t`) on existing general-purpose embeddings, applied without training. Massively cheaper than full model inference; multi-hop inference is sequential composition of displacements.
 
-2. **Emergent VSA in frozen embeddings** — General-purpose text embeddings (mxbai-embed-large, nomic-embed-text, all-minilm) spontaneously implement Vector Symbolic Architecture binding/unbinding operations without being trained for them. 30 universal relations manifest across all three models. This is an emergent property, not a trained one.
+2. **Cross-model relational structure in frozen embeddings** — General-purpose text embeddings (mxbai-embed-large, nomic-embed-text, all-minilm) encode the same 30 universal relations as consistent vector displacements without being trained for them. The shared structure is a property of the semantic relationships, not any single model.
 
 3. **Critical production regression in the Ollama runtime (mxbai-embed-large)** — A diacritic-collapse defect causes 147,687 cross-entity embedding collisions: diacritical strings collapse into a single `[UNK]`-dominated region (cosine 1.0 between unrelated entities like "Hokkaidō" and "Éire"). **Bisected to Ollama v0.14.0 (2026-01-10)** over 21 releases (`collision-bisect.yml`): the byte-identical model blob is healthy on Ollama ≤ v0.13.4 and defective on ≥ v0.14.0 through current v0.24.0. So it is a *serving-runtime regression*, recent (not years old), not an inherent model flaw — and invisible to standard benchmarks like MTEB. Provenance now derived, not guessed, via `scripts/resolve_versions_for_date.py`.
 
@@ -21,7 +21,7 @@
 - **Repo:** EmmaLeonhart/latent-space-cartography
 
 ## Key Criticisms to Address
-- **"It's just TransE"** (10/15 reviews) — Fix by reframing as VSA/HDC, which it actually is
+- **"It's just TransE"** (10/15 reviews) — Don't fight it: the paper now *embraces* this framing. It is standard TransE-style relational displacement analysis applied to frozen (non-KGE) embeddings, stated plainly. The earlier VSA/HDC reframe has been abandoned. The contribution is not the method but what the method found (the cross-model relations and the Ollama regression).
 - **"Tautology" in consistency-accuracy correlation** (9/15 reviews) — Fix with proper train/test split
 - **"Grandiose framing"** — Don't overclaim. Let the empirical results speak.
 - See `planning/` directory for detailed analysis
