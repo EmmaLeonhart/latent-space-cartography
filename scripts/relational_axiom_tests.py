@@ -1,18 +1,18 @@
 """
-VSA Analysis: Empirical Tests of Vector Symbolic Architecture Properties
-========================================================================
-Tests whether frozen text embeddings satisfy VSA axioms and compares
-bundling (addition) vs binding (element-wise multiplication) operations.
+Relational Operation Axiom Tests
+================================
+Empirically tests which vector operation best models relations in frozen text
+embeddings: additive displacement (bundling) vs element-wise binding.
 
 Four experiments:
-1. Bundling axiom verification: does d = f(tail) - f(head) produce results
-   SIMILAR to other displacements for the same predicate? (bundling property)
+1. Additive displacement verification: does d = f(tail) - f(head) produce results
+   SIMILAR to other displacements for the same predicate? (additive/bundling property)
 2. Binding comparison: test element-wise multiplication (MAP binding) as an
-   alternative to addition — does binding outperform bundling?
-3. FHRR bridge: test whether operations work better in angular/phase space
-   (unit-normalized vectors on the hypersphere)
+   alternative to addition — does binding outperform additive displacement?
+3. Phase-space bridge (FHRR): test whether operations work better in angular/phase
+   space (unit-normalized vectors on the hypersphere)
 4. Dissimilarity test: is the result of our operation similar or dissimilar
-   to its inputs? (distinguishes bundling from binding formally)
+   to its inputs? (distinguishes additive composition from binding formally)
 """
 
 import sys
@@ -90,7 +90,7 @@ def get_predicate_triples(items, qid_map, min_triples=10):
 
 def experiment_1_bundling_axioms(pred_triples, properties, top_n=20):
     """
-    Test VSA bundling axioms:
+    Test additive (bundling) axioms:
     - Bundling produces output SIMILAR to inputs
     - Individual displacements are similar to the mean displacement
     - The mean displacement is similar to individual displacements (recoverable)
@@ -357,7 +357,7 @@ def experiment_3_fhrr_bridge(pred_triples, properties, top_n=15):
 
 def experiment_4_dissimilarity_test(pred_triples, properties, top_n=20):
     """
-    Formal VSA test: is the output of our operation similar or dissimilar to inputs?
+    Formal test: is the output of our operation similar or dissimilar to inputs?
 
     Binding requirement (Plate 2003): δ(A ⊗ B, A) ≈ 0 (dissimilar)
     Bundling property: δ(A + B, A) > 0 (similar)
@@ -463,7 +463,7 @@ def main():
         'experiment_4_dissimilarity_test': r4,
     }
 
-    out_path = Path(__file__).resolve().parent.parent / 'vsa_results.json'
+    out_path = Path(__file__).resolve().parent.parent / 'relational_axiom_results.json'
     with open(str(out_path), 'w', encoding='utf-8') as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
     print(f"\nResults saved to {out_path}")
