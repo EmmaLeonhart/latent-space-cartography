@@ -49,6 +49,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   # Last Ollama release BEFORE the regression (2025-12-13). Model is
   # healthy here. Bump only if the bisected boundary itself moves.
   CLEAN_OLLAMA_VERSION: "0.13.4"
