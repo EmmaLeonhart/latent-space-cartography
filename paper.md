@@ -416,7 +416,6 @@ Hewitt, J., & Manning, C. D. (2019). A structural probe for finding syntax in wo
 
 Kazemi, S. M., & Poole, D. (2018). SimplE embedding for link prediction in knowledge graphs with baseline model comparison. *NeurIPS*.
 
-
 Li, Y., Liu, Y., Deng, G., Zhang, Y., & Song, W. (2024). Glitch Tokens in Large Language Models: Categorization Taxonomy and Effective Detection. *Proceedings of the ACM on Software Engineering*, 1(FSE). https://doi.org/10.1145/3660799
 
 Linzen, T. (2016). Issues in evaluating semantic spaces using word analogies. *RepEval Workshop*.

@@ -1,0 +1,119 @@
+name: Paper PDF + arXiv source bundle
+
+# Builds paper.pdf from paper.md (pandoc -> latexmk with the NeurIPS
+# 2026 style) and assembles the flat three-file arXiv source tarball
+# (paper.tex + paper.tex.body + neurips_2026.sty). Both are uploaded
+# as workflow artifacts. The Pages workflow (pages.yml) builds and
+# serves the PDF for the website; this workflow is the canonical
+# producer of the downloadable arXiv source bundle.
+#
+# Build chain:
+#   sed pre-pass  -> strip H1 title + **Emma Leonhart** byline, strip
+#                    manual section numbers, tag Abstract/References {-}
+#   pandoc        -> paper.tex.body
+#   latexmk -pdf  -> paper.pdf   (named/preprint)
+#   tar -czf      -> latent-space-arxiv-source.tar.gz
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "paper.md"
+      - "paper.tex"
+      - "neurips_2026.sty"
+      - ".github/workflows/paper-pdf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-pdf:
+    name: Build paper.pdf + arXiv source tarball
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install TeX Live + pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            lmodern \
+            latexmk \
+            pandoc
+
+      - name: Generate paper.tex.body from paper.md
+        run: |
+          # Pre-process paper.md before pandoc (identical to pages.yml):
+          #   1. Strip the H1 title line — paper.tex's \maketitle renders
+          #      the title; emitting the H1 would duplicate it on page 1.
+          #   2. Strip the **Emma Leonhart** byline — \author handles it.
+          #   3. Strip manual section numbers ("## 1. Introduction" ->
+          #      "## Introduction") so the rendered headings are not
+          #      double-numbered.
+          #   4. Tag Abstract / References with pandoc's {-} so they
+          #      render unnumbered (\section*). paper.md on disk is
+          #      untouched; the transformation is per-build only.
+          sed \
+            -e '1{/^# /d}' \
+            -e '/^\*\*Emma Leonhart\*\*$/d' \
+            -e 's|^## [0-9]\+\. |## |' \
+            -e 's|^### [0-9]\+\.[0-9]\+ |### |' \
+            -e 's|^## Abstract$|## Abstract {-}|' \
+            -e 's|^## References$|## References {-}|' \
+            paper.md > paper-pre.md
+          # --from=markdown-smart (not gfm): pandoc's gfm reader does not
+          # support raw_tex, so \begin{...} blocks would be escaped to
+          # literal text. --shift-heading-level-by=-1 promotes ## ->
+          # \section (with the H1 stripped above).
+          pandoc paper-pre.md \
+            --from=markdown-smart \
+            --to=latex \
+            --output=paper.tex.body \
+            --wrap=preserve \
+            --no-highlight \
+            --shift-heading-level-by=-1
+
+      - name: Build named PDF
+        run: |
+          # NeurIPS 2026 style requires pdflatex. The named build uses
+          # [preprint]neurips_2026 (non-anonymous, no line numbers).
+          # max_repeat=8 gives latexmk extra passes for cross-references.
+          latexmk -pdf -interaction=nonstopmode \
+            -e '$max_repeat=8' paper.tex
+          # arXiv-blocking-error gate: latexmk -interaction=nonstopmode
+          # continues past LaTeX errors and still emits a PDF, so a green
+          # CI check does NOT guarantee strict pdflatex (arXiv) accepts
+          # the source. Grep for hard errors and fail loudly.
+          if grep -E '^! LaTeX Error:' paper.log; then
+            echo "::error::LaTeX Error(s) in paper.log — arXiv would reject this source. Fix and re-push."
+            exit 1
+          fi
+
+      - name: Build arXiv source tarball
+        run: |
+          # arXiv submission bundle: paper.tex (wrapper) + paper.tex.body
+          # (pandoc output of paper.md, generated above) + neurips_2026.sty.
+          # arXiv's TeX Live runs pdflatex on these three flat files;
+          # pandoc is NOT run on their side, so the bundle ships pandoc's
+          # output pre-generated. Three flat files, no nested directory.
+          tar -czf latent-space-arxiv-source.tar.gz \
+            paper.tex paper.tex.body neurips_2026.sty
+          ls -la latent-space-arxiv-source.tar.gz
+
+      - name: Upload PDF + arXiv source as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-pdf-and-arxiv-source
+          path: |
+            paper.pdf
+            latent-space-arxiv-source.tar.gz
+          retention-days: 90
