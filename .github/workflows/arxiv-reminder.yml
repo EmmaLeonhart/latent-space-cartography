@@ -1,0 +1,61 @@
+name: arXiv publish reminder
+
+# One-shot reminder set 2026-06-19: ping Emma two weeks later (2026-07-03) to
+# publish the Latent Space Cartography paper on arXiv. It works by opening a
+# GitHub issue assigned to the repo owner, which GitHub delivers as an email
+# (assignment notification) with no SMTP secrets required.
+#
+# GitHub cron is recurring and runs in UTC, so this fires every year on Jul 3;
+# the "year guard" step below makes it act only in 2026 (effectively one-shot).
+# Manual `workflow_dispatch` bypasses the guard so you can test it any time.
+
+on:
+  schedule:
+    - cron: '17 13 3 7 *'   # 2026-07-03 13:17 UTC
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard to the intended year (2026), unless manually dispatched
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          elif [ "$(date -u +%Y)" = "2026" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            echo "Past 2026: the one-shot arXiv reminder was already served. Skipping."
+          fi
+
+      - name: Open the arXiv-publish reminder issue (emails the assignee)
+        if: steps.guard.outputs.go == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              '**Reminder set 2026-06-19 (two weeks out): time to publish this paper on arXiv.**',
+              '',
+              'Paper: *Latent Space Cartography Applied to Wikidata* (Claw4S 2026, Paper ID 2604.00648).',
+              '',
+              'Submission steps (full version in `docs/arxiv.md`):',
+              '1. Grab the arXiv source bundle: run the **Paper PDF + arXiv source bundle** workflow (`paper-pdf.yml`) and download its `latent-space-arxiv-source.tar.gz` artifact.',
+              '2. On arXiv, choose "upload a single `.tar.gz`" and upload the bundle.',
+              '3. Select Compiler screen: keep `pdflatex`, TeX Live 2025, top-level `paper.tex`; keep all bundled files.',
+              '4. Paste the AI-disclosure one-liner from `docs/arxiv.md` into the Comments metadata field.',
+              '5. Submit, then close this issue.',
+              '',
+              '_Opened automatically by `.github/workflows/arxiv-reminder.yml`._'
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Publish the Latent Space Cartography paper on arXiv',
+              body,
+              assignees: ['EmmaLeonhart'],
+            });
