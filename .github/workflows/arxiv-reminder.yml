@@ -1,13 +1,16 @@
 name: arXiv publish reminder
 
 # One-shot reminder set 2026-06-19: ping Emma two weeks later (2026-07-03) to
-# publish the Latent Space Cartography paper on arXiv. It works by opening a
-# GitHub issue assigned to the repo owner, which GitHub delivers as an email
-# (assignment notification) with no SMTP secrets required.
+# publish the Latent Space Cartography paper on arXiv.
+#
+# Primary channel: a real email to contact@emmaleonhart.com via SMTP. This needs
+# two repo secrets (MAIL_USERNAME, MAIL_PASSWORD); the email step self-skips
+# until they exist, so the workflow never hard-fails for a missing secret.
+# Backup channel: an issue assigned to the repo owner (GitHub emails the
+# assignee via its own notification, no secrets needed) — also a durable record.
 #
 # GitHub cron is recurring and runs in UTC, so this fires every year on Jul 3;
-# the "year guard" step below makes it act only in 2026 (effectively one-shot).
-# Manual `workflow_dispatch` bypasses the guard so you can test it any time.
+# the year guard makes it act only in 2026. Manual workflow_dispatch bypasses it.
 
 on:
   schedule:
@@ -16,6 +19,9 @@ on:
 
 permissions:
   issues: write
+
+env:
+  MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
 
 jobs:
   remind:
@@ -33,7 +39,34 @@ jobs:
             echo "Past 2026: the one-shot arXiv reminder was already served. Skipping."
           fi
 
-      - name: Open the arXiv-publish reminder issue (emails the assignee)
+      - name: Email the reminder to contact@emmaleonhart.com
+        if: steps.guard.outputs.go == 'true' && env.MAIL_PASSWORD != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_SERVER || 'smtp.gmail.com' }}
+          server_port: ${{ secrets.MAIL_PORT || '465' }}
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: arXiv reminder (CI) <${{ secrets.MAIL_USERNAME }}>
+          to: contact@emmaleonhart.com
+          subject: 'Reminder: publish the Latent Space Cartography paper on arXiv'
+          body: |
+            Reminder set 2026-06-19 (two weeks out): time to publish
+            "Latent Space Cartography Applied to Wikidata" (Claw4S 2026, Paper ID 2604.00648) on arXiv.
+
+            Submission steps (full version in docs/arxiv.md):
+              1. Run the "Paper PDF + arXiv source bundle" workflow (paper-pdf.yml) and
+                 download its latent-space-arxiv-source.tar.gz artifact.
+              2. On arXiv, choose "upload a single .tar.gz" and upload the bundle.
+              3. Select Compiler: pdflatex, TeX Live 2025, top-level paper.tex; keep all files.
+              4. Paste the AI-disclosure one-liner (docs/arxiv.md) into the Comments field.
+              5. Submit.
+
+            Sent automatically by .github/workflows/arxiv-reminder.yml
+            in EmmaLeonhart/latent-space-cartography.
+
+      - name: Backup reminder issue (assigned to you; GitHub emails the assignee)
         if: steps.guard.outputs.go == 'true'
         uses: actions/github-script@v7
         with:
@@ -44,13 +77,13 @@ jobs:
               'Paper: *Latent Space Cartography Applied to Wikidata* (Claw4S 2026, Paper ID 2604.00648).',
               '',
               'Submission steps (full version in `docs/arxiv.md`):',
-              '1. Grab the arXiv source bundle: run the **Paper PDF + arXiv source bundle** workflow (`paper-pdf.yml`) and download its `latent-space-arxiv-source.tar.gz` artifact.',
+              '1. Run **Paper PDF + arXiv source bundle** (`paper-pdf.yml`) and download `latent-space-arxiv-source.tar.gz`.',
               '2. On arXiv, choose "upload a single `.tar.gz`" and upload the bundle.',
-              '3. Select Compiler screen: keep `pdflatex`, TeX Live 2025, top-level `paper.tex`; keep all bundled files.',
-              '4. Paste the AI-disclosure one-liner from `docs/arxiv.md` into the Comments metadata field.',
+              '3. Select Compiler: `pdflatex`, TeX Live 2025, top-level `paper.tex`; keep all files.',
+              '4. Paste the AI-disclosure one-liner from `docs/arxiv.md` into the Comments field.',
               '5. Submit, then close this issue.',
               '',
-              '_Opened automatically by `.github/workflows/arxiv-reminder.yml`._'
+              '_Opened automatically by `.github/workflows/arxiv-reminder.yml`. A direct email also goes to contact@emmaleonhart.com if the MAIL_* secrets are set._'
             ].join('\n');
             await github.rest.issues.create({
               owner: context.repo.owner,
