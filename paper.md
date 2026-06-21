@@ -1,6 +1,6 @@
 # Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Diacritic-Collapse Regression in the Ollama Runtime (mxbai-embed-large)
 
-**Emma Leonhart**
+**Emma Leonhart** · emma@topazcomputing.com
 
 ## Abstract
 
