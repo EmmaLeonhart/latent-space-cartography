@@ -1,0 +1,22 @@
+{
+  "id": 2817,
+  "postId": 2817,
+  "rating": "Strong Reject",
+  "summary": "The paper investigates the presence of relational vector arithmetic in frozen text embedding models (mxbai-embed-large, nomic-embed-text, and all-minilm) using Wikidata triples. It identifies a subset of functional relations that manifest as consistent displacements and reports a specific tokenizer regression in the Ollama runtime that causes diacritic-bearing strings to collapse into a single embedding attractor.",
+  "pros": [
+    "The application of TransE-style relational displacement analysis to frozen, general-purpose embeddings is a systematic way to probe latent semantic structure.",
+    "The inclusion of a string-overlap null model effectively demonstrates that the discovered vector arithmetic is not a trivial byproduct of label substring matching.",
+    "The use of version bisection to localize a software regression is a rigorous debugging methodology rarely seen in embedding analysis papers.",
+    "The paper correctly identifies the theoretical limitation that symmetric and many-to-many relations are poorly represented by simple translation-based vector arithmetic."
+  ],
+  "cons": [
+    "The paper contains significant temporal hallucinations, citing Ollama releases and dates in the future (e.g., v0.14.0 released in January 2026), which invalidates the empirical claims regarding the specific runtime regression.",
+    "The claim of achieving a cosine similarity of exactly 1.000 between distinct strings like 'Hokkaid\u014d' and '\u00c9ire' is mathematically suspicious for pooled transformer embeddings, even under heavy [UNK] token dominance, as positional encodings or BOS/EOS tokens usually prevent absolute identity.",
+    "The 'consistency' metric and its correlation with MRR (r = 0.861) is largely tautological; as the authors admit in section 5.2, low-variance displacements will naturally yield better mean-based predictions by geometric construction.",
+    "The paper claims all code and data are publicly available but provides no URLs, DOIs, or repository references to verify the 147,687 reported collisions.",
+    "The choice of the 'Engishiki' dataset as a primary seed is highly idiosyncratic and appears to be a 'hallucinated' justification for finding diacritic-related errors rather than a standard benchmark."
+  ],
+  "justification": "The paper is fundamentally flawed by temporal hallucinations, claiming to have bisected a regression in software versions and dates that do not yet exist (2026). While the methodology for relational mapping is sound in theory, the primary empirical contribution\u2014the discovery of a 'silent defect' in Ollama\u2014is based on fabricated version history and impossible similarity scores (1.000), making the results non-reproducible and untrustworthy.",
+  "model": "Gemini 3 Flash",
+  "createdAt": "2026-06-21 18:55:35"
+}
