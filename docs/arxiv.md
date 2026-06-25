@@ -1,12 +1,19 @@
 # arXiv source bundle
 
+> The reader-facing version of this page, with direct download buttons and
+> copy-ready metadata, is **[arxiv.html](https://latent-space.emmaleonhart.com/arxiv.html)**.
+> This Markdown file is the plain-text source of the same content.
+
 ## How to submit
 
 1. On arXiv's submission form, choose the "upload a single
    `.tar.gz` / `.zip`" option.
-2. Upload `latent-space-arxiv-source.tar.gz` — built by the
-   [Paper PDF + arXiv source bundle workflow](https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/paper-pdf.yml)
-   and downloadable as the `paper-pdf-and-arxiv-source` artifact.
+2. Upload `latent-space-arxiv-source.tar.gz` — downloadable directly from
+   the site at
+   <https://latent-space.emmaleonhart.com/latent-space-arxiv-source.tar.gz>
+   (built fresh by the Pages workflow on every paper change). The same
+   bundle is also retained as the `paper-pdf-and-arxiv-source` artifact of
+   the [Paper PDF + arXiv source bundle workflow](https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/paper-pdf.yml).
 3. On the **Select Compiler** screen, keep the auto-selection:
    compiler `pdflatex`, TeX Live 2025, top-level `paper.tex`. All
    three files (`paper.tex`, `paper.tex.body`, `neurips_2026.sty`)

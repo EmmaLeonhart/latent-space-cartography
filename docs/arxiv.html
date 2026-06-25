@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>arXiv submission — Latent Space Cartography</title>
+<meta name="description" content="Download the arXiv source bundle for Latent Space Cartography and everything needed to upload it: title, authors, abstract, categories, license, and a step-by-step submission walkthrough.">
+<link rel="canonical" href="https://latent-space.emmaleonhart.com/arxiv.html">
+<style>
+  :root {
+    --bg: #f6f2ec;
+    --surface: #efe9df;
+    --card: #ece4d6;
+    --accent: #b8553a;
+    --accent-soft: #e9d5cc;
+    --text: #2d2a26;
+    --dim: #6e6a61;
+    --green: #5b7a4a;
+    --yellow: #a07a2b;
+    --blue: #3f6487;
+    --border: #d9d1c1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.75;
+    max-width: 880px; margin: 0 auto; padding: 2.5rem 1.5rem;
+    font-size: 16.5px;
+  }
+  h1 {
+    color: var(--text); font-size: 2.1rem; margin-bottom: 0.4rem;
+    font-weight: 700; letter-spacing: -0.01em;
+  }
+  h2 {
+    color: var(--blue); font-size: 1.35rem; margin: 2.75rem 0 1rem;
+    padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  h3 { font-size: 1.02rem; font-weight: 600; margin: 1.4rem 0 0.3rem; }
+  p { margin-bottom: 1rem; }
+  a { color: var(--blue); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--blue); }
+  .back { font-size: 0.9rem; color: var(--dim); }
+  .lede {
+    color: var(--dim); font-size: 1.1rem; margin-top: 0.8rem;
+    line-height: 1.65;
+  }
+  /* Download buttons */
+  .downloads {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem; margin: 2rem 0 0.5rem;
+  }
+  .dl {
+    display: block; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem 1.3rem; color: var(--text);
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .dl:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .dl.primary { border-color: var(--accent); background: var(--accent-soft); }
+  .dl .kicker {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--accent); font-weight: 700;
+  }
+  .dl .title { font-size: 1.12rem; font-weight: 600; margin: 0.35rem 0 0.3rem; }
+  .dl .desc { font-size: 0.9rem; color: var(--dim); line-height: 1.55; }
+  .dl .arrow { color: var(--accent); font-weight: 700; }
+  .note {
+    font-size: 0.85rem; color: var(--dim); margin-top: 0.4rem;
+  }
+  /* Copy-ready metadata fields */
+  dl.meta { margin: 1rem 0; }
+  dl.meta > div {
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); padding: 0.8rem 1rem; margin-bottom: 0.7rem;
+  }
+  dl.meta dt {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--accent); font-weight: 700; margin-bottom: 0.3rem;
+  }
+  dl.meta dd {
+    font-size: 0.95rem; color: var(--text); line-height: 1.6;
+    -webkit-user-select: all; user-select: all;
+  }
+  dl.meta dd.abstract { font-size: 0.9rem; line-height: 1.7; }
+  ol.steps { margin: 1rem 0 1rem 1.3rem; }
+  ol.steps li { margin-bottom: 0.7rem; }
+  pre {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem 1.1rem; overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.82rem; line-height: 1.5; color: var(--text); margin: 1rem 0;
+  }
+  code {
+    background: var(--surface); padding: 0.1rem 0.35rem; border-radius: 3px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 0.86em;
+    color: var(--accent); border: 1px solid var(--border);
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; }
+  ul.tight { margin: 0.6rem 0 1rem 1.3rem; }
+  ul.tight li { margin-bottom: 0.4rem; }
+  footer {
+    margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--border);
+    color: var(--dim); font-size: 0.85rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1d22;
+      --surface: #26282f;
+      --card: #2d3038;
+      --accent: #d97757;
+      --accent-soft: rgba(217,119,87,0.14);
+      --text: #e8e4dc;
+      --dim: #9a9589;
+      --green: #8ba87a;
+      --yellow: #c6a15e;
+      --blue: #85a8c4;
+      --border: #3a3d46;
+    }
+  }
+  @media (max-width: 600px) {
+    body { padding: 1.2rem; }
+    .downloads { grid-template-columns: 1fr; }
+    h1 { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<p class="back"><a href="index.html">&larr; Latent Space Cartography</a></p>
+
+<h1>arXiv submission</h1>
+<p class="lede">
+  Everything needed to upload this paper to arXiv: the ready-to-submit
+  source bundle, the compiled PDF, and the copy-ready metadata. The bundle
+  is rebuilt automatically on every change to the paper, so the link below
+  always serves the current source.
+</p>
+
+<h2>Download</h2>
+<div class="downloads">
+  <a class="dl primary" href="latent-space-arxiv-source.tar.gz" download>
+    <div class="kicker">arXiv source bundle</div>
+    <div class="title">latent-space-arxiv-source.tar.gz</div>
+    <div class="desc">
+      The flat three-file LaTeX source (<code>paper.tex</code> +
+      <code>paper.tex.body</code> + <code>neurips_2026.sty</code>) &mdash;
+      upload this single file to arXiv. <span class="arrow">&darr;</span>
+    </div>
+  </a>
+  <a class="dl" href="paper.pdf" download>
+    <div class="kicker">Compiled PDF</div>
+    <div class="title">paper.pdf</div>
+    <div class="desc">
+      The NeurIPS-styled PDF arXiv will produce from the bundle &mdash;
+      check it before you submit. <span class="arrow">&darr;</span>
+    </div>
+  </a>
+</div>
+<p class="note">
+  Both files are built fresh in CI and served from this site (never committed
+  to the repo). If a download 404s, the
+  <a href="https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/pages.yml">Pages build</a>
+  is still running &mdash; give it a minute and refresh.
+</p>
+
+<h2>Metadata to paste into the arXiv form</h2>
+<p>Each field below is click-to-select. These are the exact values for the arXiv submission form.</p>
+<dl class="meta">
+  <div>
+    <dt>Title</dt>
+    <dd>Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Diacritic-Collapse Regression in the Ollama Runtime (mxbai-embed-large)</dd>
+  </div>
+  <div>
+    <dt>Authors</dt>
+    <dd>Emma Leonhart (emma@topazcomputing.com)</dd>
+  </div>
+  <div>
+    <dt>Primary category</dt>
+    <dd>cs.CL &mdash; Computation and Language</dd>
+  </div>
+  <div>
+    <dt>Cross-list categories</dt>
+    <dd>cs.LG (Machine Learning), cs.IR (Information Retrieval)</dd>
+  </div>
+  <div>
+    <dt>Comments</dt>
+    <dd>AI language models were used for literature exploration and drafting assistance; experiments, results, and final text are the author's own.</dd>
+  </div>
+  <div>
+    <dt>License</dt>
+    <dd>CC BY 4.0 (recommended) &mdash; or arXiv's default non-exclusive license to distribute. Emma's call at submission time.</dd>
+  </div>
+  <div>
+    <dt>Abstract</dt>
+    <dd class="abstract">We apply latent space cartography — the systematic mapping of structure in pre-trained embedding spaces (Liu et al., 2019) — to three general-purpose text embedding models using Wikidata knowledge graph triples as probes. The method is a standard application of TransE-style relational displacement analysis (Bordes et al., 2013) to frozen (non-KGE) embeddings: given any embedding model and any knowledge base, it discovers which relations manifest as consistent vector displacements and which do not. Applied to mxbai-embed-large (1024-dim), nomic-embed-text (768-dim), and all-minilm (384-dim), the procedure identifies 30 relations that are consistent across all three models, confirming that these are properties of the semantic relationships rather than artifacts of any single model. A correlation between geometric consistency and prediction accuracy (r = 0.861, 95% CI [0.773, 0.926]) reproduces across models, meaning the consistency metric predicts which discovered operations will be useful without held-out evaluation.
+
+The primary empirical finding is a previously unreported defect in how the Ollama runtime serves mxbai-embed-large: 147,687 cross-entity embedding pairs at cosine similarity ≥ 0.95, with diacritic-bearing input collapsing into a single [UNK]-dominated attractor region. Crucially, this is not an inherent property of the model and is not long-standing: a version bisection over 21 Ollama releases localizes it to a runtime regression introduced in Ollama v0.14.0 (released 2026-01-10). The identical mxbai-embed-large registry blob is completely healthy on Ollama ≤ v0.13.4 (diacritical collision rate ≈ 0, indistinguishable from an ASCII control) and defective on every release from v0.14.0 through the current v0.24.0 (≈ 10–11%). On affected versions, "Hokkaidō" has cosine similarity 1.0 with "Éire", "Djazaïr", and "Filasṭīn" — completely unrelated words in different languages — while having cosine similarity of only 0.45 with its own ASCII equivalent "Hokkaido"; these collisions occupy the densest regions of the embedding space (71% in the densest quartile). The defect is silent: it affects any RAG system, semantic search engine, or knowledge graph application serving mxbai-embed-large via an affected Ollama version with non-ASCII input, and standard benchmarks (MTEB, etc.) do not test for it. The method, all code, and all data are publicly available.</dd>
+  </div>
+</dl>
+
+<h2>How to submit</h2>
+<ol class="steps">
+  <li>Download <code>latent-space-arxiv-source.tar.gz</code> above.</li>
+  <li>On arXiv's submission form, choose <strong>"Start a new submission"</strong> and, on the file step, the <em>"upload a single <code>.tar.gz</code> / <code>.zip</code>"</em> option. Upload the tarball.</li>
+  <li>On the <strong>Select Compiler</strong> screen, keep the auto-selection: compiler <code>pdflatex</code>, TeX&nbsp;Live&nbsp;2025, top-level <code>paper.tex</code>. All three files (<code>paper.tex</code>, <code>paper.tex.body</code>, <code>neurips_2026.sty</code>) should be marked <strong>Keep</strong>.</li>
+  <li>arXiv runs <code>pdflatex</code> (not pandoc — pandoc already ran when the bundle was built) and produces the public PDF. Compare it against the <code>paper.pdf</code> above; they should match.</li>
+  <li>Fill the metadata fields from the section above: Title, Authors, Abstract, primary category <code>cs.CL</code>, cross-lists <code>cs.LG</code>/<code>cs.IR</code>, and paste the AI-disclosure line into <strong>Comments</strong>.</li>
+  <li>Pick the license, then submit.</li>
+</ol>
+
+<h2>What's inside, and how it builds</h2>
+<p>The full build chain is:</p>
+<pre><code>paper.md  ─pandoc→  paper.tex.body  ─\input→  paper.tex  ─pdflatex→  paper.pdf
+                                                  ↑
+                                       neurips_2026.sty</code></pre>
+<p>
+  arXiv's side only runs the second half (<code>pdflatex paper.tex</code> against
+  the three files in the tarball), so the bundle ships pandoc's output
+  pre-generated. Three flat files, no nesting:
+</p>
+<ul class="tight">
+  <li><strong><code>paper.tex</code></strong> — the wrapper: documentclass, packages, hyperref config, the Unicode&nbsp;→&nbsp;glyph mapping (load-bearing here — the paper is <em>about</em> a diacritic-collapse defect, so the diacritical text must render exactly), the pandoc emission shims, title and author block, <code>\input{paper.tex.body}</code>.</li>
+  <li><strong><code>paper.tex.body</code></strong> — the entire paper body as LaTeX, produced by pandoc from <code>paper.md</code> on every CI run. Gitignored; generated, not committed.</li>
+  <li><strong><code>neurips_2026.sty</code></strong> — the official NeurIPS 2026 style file, loaded in <code>preprint</code> mode (named author block, no line numbers).</li>
+</ul>
+
+<h2>Reproducibility</h2>
+<p>
+  The reproducibility artifact referenced in the paper is this repository itself
+  (scripts under <code>scripts/</code>, full instructions in
+  <a href="https://github.com/EmmaLeonhart/latent-space-cartography/blob/main/SKILL.md">SKILL.md</a>).
+  The data is regenerable from Wikidata + Ollama (<code>mxbai-embed-large</code>);
+  no model weights are vendored. You can rely on the in-paper GitHub URL, or
+  attach a snapshot as an arXiv ancillary file.
+</p>
+<p class="note">
+  The bundle is regenerated by the
+  <a href="https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/pages.yml">Deploy GitHub Pages workflow</a>
+  on every change to <code>paper.md</code>, <code>paper.tex</code>,
+  <code>neurips_2026.sty</code>, or the site. The
+  <a href="https://github.com/EmmaLeonhart/latent-space-cartography/actions/workflows/paper-pdf.yml">Paper PDF + arXiv source workflow</a>
+  builds the identical bundle as a retained Actions artifact.
+</p>
+
+<footer>
+  <p>
+    <a href="index.html">Latent Space Cartography</a>
+    &middot; <a href="https://github.com/EmmaLeonhart/latent-space-cartography">github.com/EmmaLeonhart/latent-space-cartography</a>
+    &middot; clawRxiv <a href="https://clawrxiv.io/abs/2604.01127">2604.01127</a>
+  </p>
+</footer>
+
+</body>
+</html>

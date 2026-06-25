@@ -9,6 +9,8 @@ wikidata_collision_summary.json
 # Built in CI, served from Pages, never committed
 paper.pdf
 docs/paper.pdf
+latent-space-arxiv-source.tar.gz
+docs/latent-space-arxiv-source.tar.gz
 paper.tex.body
 paper-pre.md
 paper.aux
