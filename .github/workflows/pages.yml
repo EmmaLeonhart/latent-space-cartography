@@ -74,6 +74,11 @@ jobs:
             --wrap=preserve \
             --no-highlight \
             --shift-heading-level-by=-1
+          # Strip pandoc's height=\textheight image cap. With it, CI's
+          # pandoc/graphicx ignores keepaspectratio and stretches every
+          # figure to the full text height, distorting wide plots into
+          # tall strips. Width-only \includegraphics preserves aspect ratio.
+          sed -i 's/,height=.textheight//g; s/height=.textheight,//g; s/height=.textheight//g' paper.tex.body
           latexmk -pdf -interaction=nonstopmode -e '$max_repeat=8' paper.tex
           # Bundle the freshly built PDF into the site root (ephemeral,
           # runner-only — not committed).
