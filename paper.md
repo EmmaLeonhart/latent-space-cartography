@@ -414,6 +414,10 @@ The defect was discovered because the cartographic procedure, seeded from a Japa
 
 All code, data, and reproduction scripts are publicly available at <https://github.com/EmmaLeonhart/latent-space-cartography>. The repository includes the Wikidata collision scan, the Ollama version-bisection harness used for Table 11, the cross-model pipeline, and `collisions.csv` (the full set of colliding embedding pairs underlying Section 5.4). The bisection reproduces deterministically on a pinned Ollama runtime: the scan is clean on v0.13.4 and surfaces the regression on v0.14.0 and later.
 
+### AI Disclosure
+
+AI language models were used for literature exploration and drafting assistance. All experiments, results, analysis, and final text are the author's own, and the author takes full responsibility for the content of this paper.
+
 ## References
 
 Bordes, A., Usunier, N., Garcia-Durán, A., Weston, J., & Yakhnenko, O. (2013). Translating Embeddings for Modeling Multi-relational Data. *NeurIPS*, 26.
