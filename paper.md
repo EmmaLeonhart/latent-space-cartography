@@ -442,9 +442,9 @@ Mikolov, T., Sutskever, I., Chen, K., Corrado, G. S., & Dean, J. (2013). Distrib
 
 Rocktäschel, T., & Riedel, S. (2017). End-to-end differentiable proving. *NeurIPS*.
 
-Rogers, A., Drozd, A., & Li, B. (2017). The (too many) problems of analogical reasoning with word vectors. *StarSem*.
+Rogers, A., Drozd, A., & Li, B. (2017). The (too many) problems of analogical reasoning with word vectors. *\*SEM 2017*.
 
-Rust, P., Pfeiffer, J., Vulić, I., Ruder, S., & Gurevych, I. (2021). How good is your tokenizer? On the monolingual performance of multilingual language models. *ACL*.
+Rust, P., Pfeiffer, J., Vulić, I., Ruder, S., & Gurevych, I. (2021). How good is your tokenizer? On the monolingual performance of multilingual language models. *ACL-IJCNLP 2021*.
 
 Schluter, N. (2018). The word analogy testing caveat. *NAACL*.
 
