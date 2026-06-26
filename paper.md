@@ -184,7 +184,7 @@ Leave-one-out evaluation of all 86 discovered operations:
 | P21 | sex or gender | 91 | 0.674 | 0.422 | 0.121 | 0.945 | 0.989 |
 | P27 | country of citizenship | 37 | 0.690 | 0.401 | 0.162 | 0.892 | 0.973 |
 
-**Table 3.** Prediction results for selected operations (full table in supplementary). MRR = Mean Reciprocal Rank. H@k = Hits at rank k. The four predicates achieving MRR = 1.000 are functional predicates with highly consistent Wikidata naming conventions (e.g., every country has exactly one "Demographics of [Country]" article). Perfect MRR is expected when: (a) the predicate is strictly functional (one object per subject), (b) the displacement is consistent (alignment > 0.87), and (c) the object label is semantically close to a predictable transformation of the subject. Crucially, the string overlap null model (Section 4.4) confirms this is not a string manipulation artifact: these same predicates achieve string MRR of only 0.008–0.046 vs. vector MRR of 1.000. The embedding captures the semantic operation; the label convention merely makes the target unambiguous among 41,725 candidates.
+**Table 3.** Prediction results for selected operations (full table for all 86 operations in the linked repository). MRR = Mean Reciprocal Rank. H@k = Hits at rank k. The four predicates achieving MRR = 1.000 are functional predicates with highly consistent Wikidata naming conventions (e.g., every country has exactly one "Demographics of [Country]" article). Perfect MRR is expected when: (a) the predicate is strictly functional (one object per subject), (b) the displacement is consistent (alignment > 0.87), and (c) the object label is semantically close to a predictable transformation of the subject. Crucially, the string overlap null model (Section 4.4) confirms this is not a string manipulation artifact: these same predicates achieve string MRR of only 0.008–0.046 vs. vector MRR of 1.000. The embedding captures the semantic operation; the label convention merely makes the target unambiguous among 41,725 candidates.
 
 **Aggregate statistics across all 86 operations:**
 
@@ -356,7 +356,7 @@ A natural objection is that this is a long-standing flaw in mxbai-embed-large's 
 | v0.14.1 … v0.15.4 | 2026-01 → 2026-02 | 10.5–11.6% | ~0.59 | defect |
 | v0.17.0, v0.19.0, v0.20.2, v0.21.0, v0.22.0, v0.23.4, v0.24.0 | 2026-02 → 2026-05 | 10.3–11.1% | ~0.59 | defect |
 
-**Table 11.** Ollama version bisection. A clean, single-release boundary: every release through v0.13.4 (2025-12-13) is healthy; the regression appears at v0.14.0 (2026-01-10) and persists through the current v0.24.0. Because the model is byte-identical across the boundary, the defect is unambiguously a regression in the Ollama serving runtime, introduced in the v0.13.5 → v0.14.0 release. It is therefore recent (not "years old") and reproduces deterministically on a pinned v0.14.0+ runtime — which is how our CI now asserts it (a two-sided test: must be clean on v0.13.4, must reproduce on v0.14.0). Identifying the precise upstream commit within that release is left to Ollama maintainers; the v0.14.0 changelog notably includes an embedding-path change ("an error will now return when embeddings return `NaN` or `-Inf`").
+**Table 11.** Ollama version bisection. A clean, single-release boundary: every release through v0.13.4 (2025-12-13) is healthy; the regression appears at v0.14.0 (2026-01-10) and persists through the current v0.24.0. Because the model is byte-identical across the boundary, the defect is unambiguously a regression in the Ollama serving runtime, introduced at the v0.13.4 → v0.14.0 boundary. It is therefore recent (not "years old") and reproduces deterministically on a pinned v0.14.0+ runtime — which is how our CI now asserts it (a two-sided test: must be clean on v0.13.4, must reproduce on v0.14.0). Identifying the precise upstream commit within that release is left to Ollama maintainers; the v0.14.0 changelog notably includes an embedding-path change ("an error will now return when embeddings return `NaN` or `-Inf`").
 
 **The collapse zone is dense, not sparse.** Geometric analysis of 16,067 colliding embeddings (vs. 74,760 non-colliding) reveals:
 
@@ -390,9 +390,9 @@ The broader lesson is about the *serving stack*, not the model: a point-release 
 
 4. **Potential training data overlap.** The embedding models tested were trained on large web crawls that likely include Wikipedia content, and Wikidata entities often have corresponding Wikipedia articles. This raises the possibility that some discovered displacements reflect memorized associations from training data rather than emergent geometric structure. The cross-model consistency (30 universal operations across three independently trained models) provides partial mitigation: memorization patterns would be model-specific, while consistent operations across architectures suggest structural encoding. However, a definitive test would require embedding models trained on corpora that exclude Wikipedia, which we leave for future work.
 
-5. **Mechanism localized empirically, not from source.** We establish by version bisection that the regression entered at Ollama v0.14.0 with the model byte-unchanged, which rules out an inherent model-tokenizer flaw and rules in an Ollama-side tokenization/serving change. We do not pinpoint the exact upstream commit or its internal cause from Ollama source; that requires a diff of the v0.13.5 → v0.14.0 release and is left to upstream maintainers. Whether other runtimes (llama.cpp, vLLM, sentence-transformers direct) exhibit the same collapse for this model is untested and we make no claim about them.
+5. **Mechanism localized empirically, not from source.** We establish by version bisection that the regression entered at Ollama v0.14.0 with the model byte-unchanged, which rules out an inherent model-tokenizer flaw and rules in an Ollama-side tokenization/serving change. We do not pinpoint the exact upstream commit or its internal cause from Ollama source; that requires a diff of the v0.13.4 → v0.14.0 release range and is left to upstream maintainers. Whether other runtimes (llama.cpp, vLLM, sentence-transformers direct) exhibit the same collapse for this model is untested and we make no claim about them.
 
-4. **Relational displacement, not full FOL.** We test which binary relations encode as consistent vector arithmetic. Full first-order logic includes quantifiers, variable binding, negation, and complex formula composition, none of which we test. Extending the displacement analysis to richer logical operations is future work.
+6. **Relational displacement, not full FOL.** We test which binary relations encode as consistent vector arithmetic. Full first-order logic includes quantifiers, variable binding, negation, and complex formula composition, none of which we test. Extending the displacement analysis to richer logical operations is future work.
 
 ## 6. Conclusion
 
@@ -402,7 +402,9 @@ The primary finding is a silent diacritic-collapse defect in mxbai-embed-large *
 
 The defect was discovered because the cartographic procedure, seeded from a Japanese historical text (Engishiki), naturally reached the diacritic-rich terminology that standard benchmarks never test. This suggests a broader lesson: systematic probing of embedding spaces with domain-specific knowledge graphs can surface defects that generic benchmarks miss. The practical recommendation is to test embedding models with representative non-ASCII input before deployment.
 
-All code and data are publicly available.
+### Data and Code Availability
+
+All code, data, and reproduction scripts are publicly available at <https://github.com/EmmaLeonhart/latent-space-cartography>. The repository includes the Wikidata collision scan, the Ollama version-bisection harness used for Table 11, the cross-model pipeline, and `collisions.csv` (the full set of colliding embedding pairs underlying Section 5.4). The bisection reproduces deterministically on a pinned Ollama runtime: the scan is clean on v0.13.4 and surfaces the regression on v0.14.0 and later.
 
 ## References
 

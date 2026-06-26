@@ -63,6 +63,7 @@ jobs:
             -e '/^\*\*Emma Leonhart\*\*/d' \
             -e 's|^## [0-9]\+\. |## |' \
             -e 's|^### [0-9]\+\.[0-9]\+ |### |' \
+            -e 's|^#### [0-9]\+\.[0-9]\+\.[0-9]\+ |#### |' \
             -e 's|^## Abstract$|## Abstract {-}|' \
             -e 's|^## References$|## References {-}|' \
             paper.md > paper-pre.md
