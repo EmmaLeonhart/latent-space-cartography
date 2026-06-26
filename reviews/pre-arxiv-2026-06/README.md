@@ -36,14 +36,22 @@ before acting (real-numbers-only discipline):
   paper uses "Engishiki" consistently.
 - Collision rate "≥ 0" vs "≈ 0" inconsistency (DeepSeek) — only "≈ 0" appears.
 
-## Deferred — Emma's call (not changed unilaterally)
+## Decisions Emma made (2026-06-26) — now applied
 
-- **Responsible-disclosure note:** 4/6 asked whether the regression was reported
-  to Ollama. Can't state it without knowing if it's true. Add a sentence if/when
-  filed.
-- **Title / abstract reframe to lead with the regression:** 4/6 suggested it;
-  it's an authorial framing decision. Current title already names the regression.
-- **Figures (t-SNE/UMAP of the [UNK] attractor, bisection timeline):** 3/6 asked
-  for visualizations. A real generation task, not a copy edit.
-- **Minor editorial:** soften "impact is likely substantial" (Claude); gloss
-  "Jinmyōchō" for non-Japanese readers (3/6) — left to avoid terminology drift.
+- **Responsible-disclosure note (4/6 asked):** the regression *was* filed upstream
+  — added a citation to `ollama/ollama#15609` in Section 5.4.1.
+- **Abstract reframe to lead with the regression (4/6 suggested):** done — the
+  abstract now opens with the Ollama defect + production impact, then frames the
+  cartography method as the discovery vehicle. (Title kept as-is; it already names
+  the regression. Change it on request — it ripples to `arxiv.html` and the
+  clawRxiv supersedes chain.)
+- **Figures (3/6 asked):** the four real figures already in `docs/figures/` (which
+  had never been embedded) are now in Section 5.4 — the `[UNK]` attractor heatmap,
+  the three-condition `[UNK]`-dominance histograms, the diacritic-vs-ASCII paradox,
+  and the hard-collapse threshold curve. `graphicx` added to `paper.tex`; the PNGs
+  are now shipped inside the arXiv source tarball.
+
+## Still optional (not done — Emma's call)
+
+- Soften "impact is likely substantial" (Claude); gloss "Jinmyōchō" for
+  non-Japanese readers (3/6) — left to avoid terminology drift.

@@ -89,7 +89,11 @@ jobs:
           # above. This is the SAME bundle paper-pdf.yml uploads as an
           # artifact; here it is served from the public site instead.
           tar -czf docs/latent-space-arxiv-source.tar.gz \
-            paper.tex paper.tex.body neurips_2026.sty
+            paper.tex paper.tex.body neurips_2026.sty \
+            docs/figures/collision_heatmap.png \
+            docs/figures/token_analysis.png \
+            docs/figures/diacritic_vs_plain.png \
+            docs/figures/collision_count_over_threshold.png
           ls -la docs/latent-space-arxiv-source.tar.gz
 
       - name: Setup Pages

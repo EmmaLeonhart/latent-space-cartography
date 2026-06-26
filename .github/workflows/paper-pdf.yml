@@ -107,7 +107,11 @@ jobs:
           # pandoc is NOT run on their side, so the bundle ships pandoc's
           # output pre-generated. Three flat files, no nested directory.
           tar -czf latent-space-arxiv-source.tar.gz \
-            paper.tex paper.tex.body neurips_2026.sty
+            paper.tex paper.tex.body neurips_2026.sty \
+            docs/figures/collision_heatmap.png \
+            docs/figures/token_analysis.png \
+            docs/figures/diacritic_vs_plain.png \
+            docs/figures/collision_count_over_threshold.png
           ls -la latent-space-arxiv-source.tar.gz
 
       - name: Upload PDF + arXiv source as artifacts
