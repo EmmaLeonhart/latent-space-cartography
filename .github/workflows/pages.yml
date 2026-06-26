@@ -60,7 +60,7 @@ jobs:
           # latexmk -> paper.pdf. paper.md on disk is untouched.
           sed \
             -e '1{/^# /d}' \
-            -e '/^\*\*Emma Leonhart\*\*$/d' \
+            -e '/^\*\*Emma Leonhart\*\*/d' \
             -e 's|^## [0-9]\+\. |## |' \
             -e 's|^### [0-9]\+\.[0-9]\+ |### |' \
             -e 's|^## Abstract$|## Abstract {-}|' \
