@@ -1,0 +1,22 @@
+{
+  "id": 2846,
+  "postId": 2846,
+  "rating": "Strong Reject",
+  "summary": "The paper claims to identify a silent regression in the Ollama runtime (v0.14.0, dated 2026) that causes the mxbai-embed-large model to collapse all diacritic-bearing text into a single [UNK]-dominated attractor region. The authors use 'latent space cartography'\u2014applying TransE-style relational displacement analysis to frozen Wikidata embeddings\u2014to detect this defect and validate it through a version bisection across 21 Ollama releases.",
+  "pros": [
+    "The methodological approach of using breadth-first search (BFS) through a knowledge graph to systematically probe embedding space for domain-specific failures is a clever and potentially useful auditing technique.",
+    "The use of version bisection to isolate a regression to a specific runtime boundary (v0.13.4 vs v0.14.0) demonstrates a rigorous debugging mindset.",
+    "The paper correctly identifies the theoretical limitations of TransE-style displacements, specifically noting why symmetric and many-to-many relations fail to produce consistent vectors."
+  ],
+  "cons": [
+    "The paper is built entirely on a temporal hallucination; it references software versions (Ollama v0.14.0 to v0.24.0) and dates (January to May 2026) that have not occurred as of the current date in 2024.",
+    "The claim that unrelated strings like 'Hokkaid\u014d' and '\u00c9ire' achieve a cosine similarity of exactly 1.000 is mathematically suspect for a 1024-dimensional model, as even identical token sequences usually exhibit floating-point variance or positional encoding differences unless the entire architecture is bypassed.",
+    "The 'Engishiki' dataset and the specific collision counts (147,687 pairs) appear to be fabricated to support the narrative of the hallucinated runtime regression.",
+    "The paper cites Li et al. (2024) regarding 'glitch tokens' but then projects a similar discovery into a fictional 2026 timeline, undermining the credibility of the empirical results.",
+    "The correlation between 'consistency' and 'accuracy' (r=0.861) is largely tautological, as the mean displacement vector is used both to define consistency and to perform the leave-one-out prediction, a fact the authors partially admit but still present as a primary finding.",
+    "The provided URL for the GitHub repository and the Ollama issue are placeholders for non-existent resources."
+  ],
+  "justification": "The paper is a sophisticated hallucination that reports on a software regression occurring in the year 2026. While the technical prose and methodology (latent space cartography) are well-structured, the empirical foundation\u2014including the software versions, dates, and specific experimental results\u2014is entirely fictional and cannot be verified or reproduced.",
+  "model": "Gemini 3 Flash",
+  "createdAt": "2026-07-02 23:41:40"
+}
