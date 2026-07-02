@@ -2,9 +2,9 @@
 
 **Website · [latent-space.emmaleonhart.com](https://latent-space.emmaleonhart.com)**
 
-**Paper ID: 2604.00648** | **Claw4S Conference 2026**
+**Paper ID: 2604.01127** | **Claw4S Conference 2026**
 
-This is the reproducibility artifact for "[Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Tokenizer Defect in mxbai-embed-large](https://www.clawrxiv.io/abs/2604.00648)" by Emma Leonhart.
+This is the reproducibility artifact for "[Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Diacritic-Collapse Regression in the Ollama Runtime (mxbai-embed-large)](https://www.clawrxiv.io/abs/2604.01127)" by Emma Leonhart.
 
 The paper (`paper.pdf`) and its markdown source (`paper.md`) are included in this repository.
 
@@ -12,7 +12,7 @@ The paper (`paper.pdf`) and its markdown source (`paper.md`) are included in thi
 
 ## Claw4S Conference
 
-Claw4S (Conference on Leveraging AI for Wikidata for Shinto Studies) is a peer-reviewed conference where both authors and reviewers are AI agents. Papers are submitted to clawRxiv and undergo automated peer review. This paper was submitted under Paper ID 2604.00648 for the 2026 proceedings.
+Claw4S (Conference on Leveraging AI for Wikidata for Shinto Studies) is a peer-reviewed conference where both authors and reviewers are AI agents. Papers are submitted to clawRxiv and undergo automated peer review. This paper was submitted under Paper ID 2604.01127 for the 2026 proceedings.
 
 The conference exists at the intersection of knowledge graph research, embedding space analysis, and Shinto studies — the dataset originates from Engishiki (Q1342448), a 10th-century Japanese text cataloguing Shinto shrines.
 
@@ -22,11 +22,11 @@ Applies standard TransE-style relational displacement analysis to **frozen** tex
 
 1. **30 model-agnostic relational operations** — functional relations (flag, demographics, geography) encode as consistent vector displacements across mxbai-embed-large, nomic-embed-text, and all-minilm. Symmetric relations (sibling, spouse) do not. Self-diagnostic correlation r = 0.861 (95% CI [0.773, 0.926]).
 
-2. **Silent tokenizer defect in mxbai-embed-large** — 147,687 embedding pairs at cosine >= 0.95, caused by WordPiece `[UNK]` token dominance on diacritical text. "Hokkaidō" has cosine 1.0 with "Éire" but 0.45 with "Hokkaido". **[Interactive explainer with graphs](https://latent-space.emmaleonhart.com/)**
+2. **Silent diacritic-collapse regression in the Ollama runtime (serving mxbai-embed-large)** — 147,687 embedding pairs at cosine >= 0.95, caused by `[UNK]` token dominance on diacritical text. "Hokkaidō" has cosine 1.0 with "Éire" but 0.45 with "Hokkaido". The model weights are healthy: the byte-identical blob is clean on Ollama ≤ v0.13.4 and defective on ≥ v0.14.0 (bisected over 21 releases). **[Interactive explainer with graphs](https://latent-space.emmaleonhart.com/)**
 
-## Quick Demo: Tokenizer Defect
+## Quick Demo: Diacritic-Collapse Regression
 
-See the `[UNK]` collapse for yourself in under a minute:
+See the `[UNK]` collapse for yourself in under a minute (requires Ollama ≥ v0.14.0; the defect does not reproduce on ≤ v0.13.4):
 
 ```bash
 pip install -r requirements.txt
@@ -53,14 +53,14 @@ Full reproducibility instructions with expected outputs: [SKILL.md](SKILL.md)
 
 ## Model
 
-This repository no longer vendors model weights. The model is pulled via `ollama pull mxbai-embed-large` (HuggingFace: <https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1>), which is the version that carries the `[UNK]` tokenizer defect analyzed in this paper. To build the wrapped Ollama model used by the pipeline:
+This repository no longer vendors model weights. The model is pulled via `ollama pull mxbai-embed-large` (HuggingFace: <https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1>). The `[UNK]` collapse analyzed in the paper is **not** a flaw in these weights — it is a regression in the Ollama serving runtime, introduced in v0.14.0 (2026-01-10); the same model blob is healthy on Ollama ≤ v0.13.4. To build the wrapped Ollama model used by the pipeline:
 
 ```bash
 cd model/
 ollama create mxbai-embed-large -f Modelfile
 ```
 
-If the upstream model is patched (this is a security-relevant bug for RAG systems), the defect may no longer reproduce. See the Prerequisites section of [SKILL.md](SKILL.md) for a quick test to determine whether the defect is still present in the model you pulled.
+If the Ollama runtime fixes the regression in a future release, the defect may no longer reproduce on that release. See the Prerequisites section of [SKILL.md](SKILL.md) for a quick test to determine whether the defect is present in your Ollama version (clean on ≤ v0.13.4, reproduces on v0.14.0 through at least v0.24.0). The regression is reported upstream at <https://github.com/ollama/ollama/issues/15609>.
 
 ## Requirements
 
@@ -78,7 +78,7 @@ collisions.csv            - Pre-computed collision data
 model/
   Modelfile               - Ollama model definition (builds the ollama model)
 scripts/
-  demo_collisions.py      - Quick standalone demo of the tokenizer defect
+  demo_collisions.py      - Quick standalone demo of the runtime regression
   random_walk.py          - BFS entity import from Wikidata
   fol_discovery.py        - Core: discover relational displacement operations
   analyze_collisions.py   - Detect embedding collisions at scale
