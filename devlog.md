@@ -1,5 +1,22 @@
 # devlog
 
+## 2026-07-03 — Regeneration step 1: fresh Engishiki crawl complete
+
+`random_walk.py Q1342448` finished cleanly (exit 0): **37,840 items,
+100,006 mxbai-embed-large embeddings** in `data/` (gitignored). Notes:
+the run resumed from a checkpoint after being externally killed at 215
+entities, and the resume path picked up the script's default `--limit
+1000` rather than the original 500 — kept deliberately (denser map;
+Emma said to barrel through). The fresh Engishiki-only store already
+exceeds the original paper's combined two-seed store (90,827
+embeddings), consistent with Wikidata growth since the original crawl.
+`scripts/reembed_frozen.py` was smoke-tested mid-crawl (16,645 texts,
+all-minilm, row-count assertion passed). Next: P31 country seed
+(`import_wikidata.py --instances Q6256 --limit 300`, now running), then
+frozen re-embeds with nomic-embed-text and all-minilm, then the
+analysis re-runs. The paper.md numbers update stays blocked on Emma's
+go-ahead.
+
 ## 2026-07-02 — Fixes from reviews/arxiv-hold-analysis-2026-07-01.md
 
 Worked through every fixable item in the arXiv-hold analysis report:
