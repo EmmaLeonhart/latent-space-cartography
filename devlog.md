@@ -1,5 +1,18 @@
 # devlog
 
+## 2026-07-03 — Regeneration step 3: frozen re-embeds complete
+
+`reembed_frozen.py` embedded the identical 100,113-text frozen set with
+nomic-embed-text (768-dim) and all-minilm (384-dim); outputs renamed to
+the established `data-nomic/` and `data-minilm/` convention that
+`compare_models.py` expects. All three stores verified by shape and
+index row count: (100113, 1024) / (100113, 768) / (100113, 384), index
+100,113 in each. This is the first run in this project where all three
+models see byte-identical input — the original cross-model runs
+re-crawled per model, which is what produced the "identical input"
+error the arXiv-hold report flagged. Analysis chain (fol_discovery x3,
+compare_models, analyze_collisions) launched.
+
 ## 2026-07-03 — Regeneration step 2: P31 country seed folded in
 
 `import_wikidata.py --instances Q6256 --limit 300` found 209 direct

@@ -6,8 +6,7 @@ Oh, and also please make it so that the todo.md should be updated, if it is pres
 
 ## Data regeneration on a frozen snapshot (definitive fix for report §2a/§2b)
 
-- Step 3 (running in background): embed the frozen label/alias set (100,113 texts) with nomic-embed-text and all-minilm into per-model stores via `scripts/reembed_frozen.py`, so all three models see byte-identical input. This is what makes the §4.6 cross-model claim clean.
-- Step 4: re-run `fol_discovery.py` per model + `compare_models.py`; re-run `analyze_collisions.py --threshold 0.95` and geometry on the combined store, all from the one snapshot.
+- Step 4 (running in background, data/analysis_run.log): `fol_discovery.py` per model + `compare_models.py`; `analyze_collisions.py --threshold 0.95 --k 10` on the mxbai store, all from the one frozen snapshot.
 - Step 5 (BLOCKED on Emma's decision): update every number in paper.md from the new run (embedding counts, discovered/universal op counts, r, collision totals, geometry stats, Tables 2-9). The current published numbers came from the old crawl; regenerated numbers WILL differ because Wikidata grew. Do not start without explicit go-ahead.
 
 ## Pinned tail (always last two items)
