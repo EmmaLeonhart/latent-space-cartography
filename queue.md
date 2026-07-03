@@ -6,7 +6,6 @@ Oh, and also please make it so that the todo.md should be updated, if it is pres
 
 ## Data regeneration on a frozen snapshot (definitive fix for report §2a/§2b)
 
-- Step 4 (running in background, data/analysis_run.log): `fol_discovery.py` per model + `compare_models.py`; `analyze_collisions.py --threshold 0.95 --k 10` on the mxbai store, all from the one frozen snapshot.
 - Step 5 (BLOCKED on Emma's decision): update every number in paper.md from the new run (embedding counts, discovered/universal op counts, r, collision totals, geometry stats, Tables 2-9). The current published numbers came from the old crawl; regenerated numbers WILL differ because Wikidata grew. Do not start without explicit go-ahead.
 
 ## Pinned tail (always last two items)

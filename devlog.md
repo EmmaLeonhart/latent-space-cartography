@@ -1,5 +1,35 @@
 # devlog
 
+## 2026-07-03 — Regeneration step 4: full analysis re-run complete (frozen snapshot)
+
+All analyses ran cleanly (exit 0) on the one frozen 100,113-embedding
+snapshot with byte-identical input across the three models. Headline
+numbers, old paper value in parentheses:
+
+- Predicates analyzed: 268 per model (159)
+- Strong operations, alignment > 0.7: mxbai 54 (32), nomic 80, minilm 68
+- Universal operations found by all 3 models: **33** (30); 16 by two, 19 by one
+- Consistency↔MRR correlation: mxbai **0.779** (0.861), nomic 0.430, minilm 0.804
+- Cross-model alignment correlations: mxbai↔minilm r = 0.901 (0.779),
+  mxbai↔nomic 0.436 (0.554), nomic↔minilm 0.623 (0.358)
+- Collision scan (mxbai, Ollama v0.17.1, threshold 0.95):
+  **969,622 cross-entity colliding pairs** (147,687), 16,684 same-entity;
+  mean k-NN cosine distance 0.2296
+
+Qualitative read: every published finding replicates directionally —
+a universal-operation core exists (and grew), consistency predicts
+accuracy in all three models, and the diacritic collapse reproduces at
+~6.6x the old pair count because the deeper crawl reaches far more
+diacritic-rich entities. The nomic correlation (0.43) is the weakest
+link and worth a caveat sentence if the paper is updated. Results live
+in data/fol_results.json, data-nomic/, data-minilm/,
+data/cross_model_comparison.json, data/analysis_results.json (all
+gitignored, regenerable).
+
+Remaining queue: paper.md numbers update — BLOCKED-ON-USER-ACTION
+(Emma's explicit go-ahead), plus per-entity collision participation
+count and collapse-geometry stats to compute at update time.
+
 ## 2026-07-03 — Regeneration step 3: frozen re-embeds complete
 
 `reembed_frozen.py` embedded the identical 100,113-text frozen set with
