@@ -1,5 +1,19 @@
 # devlog
 
+## 2026-07-03 — Regeneration step 2: P31 country seed folded in
+
+`import_wikidata.py --instances Q6256 --limit 300` found 209 direct
+country instances; 209 of the 217 requested QIDs were already fully
+imported by the deep Engishiki crawl, so the second seed added only 8
+new entities + 45 linked labels. Final frozen store: **37,893 items,
+100,113 embeddings**, index row-count verified. The process was killed
+externally during the Step 5 RDF rebuild (triples.nt/trajectories.ttl),
+which the analysis pipeline does not read — core store saved and
+consistent. One transient WDQS ReadTimeout on the first attempt;
+straight retry succeeded (query itself runs in 0.4 s). Takeaway for the
+paper: at --limit 1000 the Engishiki BFS subsumes the country-level
+seed; the two-seed design is now effectively one deep crawl.
+
 ## 2026-07-03 — Regeneration step 1: fresh Engishiki crawl complete
 
 `random_walk.py Q1342448` finished cleanly (exit 0): **37,840 items,
