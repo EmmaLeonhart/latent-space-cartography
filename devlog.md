@@ -1,5 +1,17 @@
 # devlog
 
+## 2026-07-03 — Productivity files brought to cleanvibe standards
+
+Created `todo.md` (long-term horizon: arXiv transformation with its
+sub-goals — venue decision, regenerated-numbers adoption, tautology
+fix, actual-cosine reporting, nomic caveat, single-crawl §3.2
+simplification — plus review-loop and infrastructure horizons) and
+rewrote `queue.md` to the concrete/delete-on-done convention. Emma's
+2026-07-02 conversational queue prose is preserved as intent in
+todo.md; her CI/CD-revival ask was already satisfied (Actions green,
+including the daily two-sided collision check). This completes the
+"bring productivity stuff up to cleanvibe standards" queue item.
+
 ## 2026-07-03 — Regeneration step 4: full analysis re-run complete (frozen snapshot)
 
 All analyses ran cleanly (exit 0) on the one frozen 100,113-embedding
