@@ -1,6 +1,30 @@
 # devlog
 
-## 2026-07-03 — Paper numbers updated to the regenerated frozen snapshot (Emma's go-ahead)
+## 2026-07-04 — Session: autonomous-loop crons restarted, end-of-session status
+
+Barreled the queue. It held only its two pinned-tail items, so the session's
+work was the tail itself:
+
+- **Crons restarted.** A fresh container means session-only `CronCreate` jobs
+  start empty (`CronList` confirmed none alive), so the three autonomous-loop
+  crons were recreated per the playbook (commit f710d24): work-loop at :03
+  (`3 * * * *`, barrel the queue, skip BLOCKED items), auto-flush at :15
+  (`15 * * * *`, commit+push any dirty tree), status-report at :42
+  (`42 * * * *`, append a dated devlog note). All three verified live.
+- **No paper/analysis work.** queue.md carries no executable items beyond the
+  pinned tail; the todo.md horizons (adopt regenerated numbers, tautology
+  train/test split, real cosine floats, nomic caveat, §3.2 single-crawl) remain
+  parked and, for the numbers, gated on Emma. Nothing there was in scope this
+  session.
+- Prior state at session start (from an earlier session, already on the branch):
+  paper numbers on the regenerated frozen snapshot (6d1078d), post 2847
+  submitted and its peer review fetched (801c16c, 0a44816).
+
+Caveat on the crons: they are in-memory and fire only while this session's REPL
+is idle; they die when the session exits and auto-expire after 7 days. If the
+loop needs to survive a container recycle, promote them to CCR triggers.
+
+
 
 Every statistic in paper.md now comes from the 2026-07-03 frozen
 100,113-embedding snapshot. Supporting work done in the same pass:
