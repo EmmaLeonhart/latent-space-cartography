@@ -1,5 +1,40 @@
 # devlog
 
+## 2026-07-03 — Paper numbers updated to the regenerated frozen snapshot (Emma's go-ahead)
+
+Every statistic in paper.md now comes from the 2026-07-03 frozen
+100,113-embedding snapshot. Supporting work done in the same pass:
+
+- Ported `measure_collapse_geometry.py` into `scripts/` (vectorized —
+  the old per-element Python loops were infeasible at 100k). Results:
+  18,019 colliding embeddings, 2.9x density ratio, 77% in densest
+  quartile, isolation ratio 0.98 — every old geometry claim replicates.
+- String null model re-run with a new `LSC_NULL_MAX_TRIPLES` cap (10,
+  seeded) because the uncapped run projected to days at the new triple
+  counts; cap disclosed in the paper. Vector beats string 27/27, mean
+  0.850 vs 0.019 (44x).
+- Bootstrap stats re-run: r = 0.882 [0.803, 0.940] (was 0.861),
+  Cohen's d = 2.906 (was 3.092).
+- **New finding promoted into the paper:** colliding diacritical inputs
+  receive byte-identical float vectors (verified by exact array
+  equality), not merely cosine ~= 1.0. This directly answers the
+  "exactly 1.000 is mathematically suspect" review criticism.
+- Composition table, Tables 1-10, failure analysis (P31 now 0.202 over
+  1,759 triples), cross-model section (all three models on byte-
+  identical input; 33 universal ops; r = 0.901/0.436/0.623) updated.
+- docs figures regenerated live on Ollama v0.17.1; heatmap title made
+  computed instead of hardcoded (was "361 of 380", measured 342 of 380
+  = exactly Sao Paulo's row+column, single-exception story intact).
+- SKILL.md headline numbers + paper ID updated; Data Availability now
+  calls collisions.csv a verified sample (it is 25 rows, not the full
+  set).
+- Cron prompts recreated without the stale "numbers update is blocked"
+  clause (it had kept announcing a blocker Emma had already cleared).
+
+Scope notes stated in the paper rather than hidden: prediction/overlap
+statistics cover each model's top-50 operations; the null model uses
+the 10-triple cap; the new collision scan ran on Ollama v0.17.1.
+
 ## 2026-07-03 — Productivity files brought to cleanvibe standards
 
 Created `todo.md` (long-term horizon: arXiv transformation with its

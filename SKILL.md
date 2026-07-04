@@ -1,13 +1,13 @@
 ---
 name: latent-space-cartography
-description: Discover relational displacement operations in frozen embedding spaces using Wikidata triples. Reproduces the key findings from "Latent Space Cartography Applied to Wikidata" — 30 model-agnostic operations with r=0.861 self-diagnostic correlation, and a silent diacritic-collapse regression in the Ollama runtime serving mxbai-embed-large (bisected to Ollama v0.14.0, 2026-01-10) causing 147,687 embedding collisions.
+description: Discover relational displacement operations in frozen embedding spaces using Wikidata triples. Reproduces the key findings from "Latent Space Cartography Applied to Wikidata" — 33 model-agnostic operations with r=0.882 self-diagnostic correlation, and a silent diacritic-collapse regression in the Ollama runtime serving mxbai-embed-large (bisected to Ollama v0.14.0, 2026-01-10) causing 969,622 embedding collisions in a 100,113-embedding corpus.
 allowed-tools: Bash(python *), Bash(pip *), Bash(ollama *), WebFetch
 ---
 
 # Latent Space Cartography Applied to Wikidata
 
 **Author: Emma Leonhart**
-**Paper ID: 2604.00648**
+**Paper ID: 2604.01127**
 
 This skill reproduces the results from "Latent Space Cartography Applied to Wikidata: Relational Displacement Analysis Reveals a Silent Diacritic-Collapse Regression in the Ollama Runtime (mxbai-embed-large)." It applies standard TransE-style relational displacement analysis to frozen text embedding models using Wikidata knowledge graph triples as probes.
 
@@ -16,8 +16,8 @@ This skill reproduces the results from "Latent Space Cartography Applied to Wiki
 All scripts, the paper PDF, and pre-computed collision data are in this repository. The model weights are NOT vendored — pull mxbai-embed-large-v1 via `ollama pull mxbai-embed-large` (HuggingFace source: https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1). Clone the repo first — all steps below assume you are working from it.
 
 **Two key findings:**
-1. **30 model-agnostic relational operations** discovered across three embedding models — functional (many-to-one) relations encode as consistent vector arithmetic; symmetric relations do not.
-2. **A silent diacritic-collapse regression in the Ollama runtime** serving mxbai-embed-large: 147,687 cross-entity embedding pairs at cosine >= 0.95, diacritical text collapsing into a single `[UNK]`-dominated region. Bisected to Ollama v0.14.0 (2026-01-10): the same model blob is healthy on Ollama <= v0.13.4 and defective on >= v0.14.0. On affected versions "Hokkaid&#333;" has cosine 1.0 with "Eire" but only 0.45 with its own ASCII equivalent "Hokkaido."
+1. **33 model-agnostic relational operations** discovered across three embedding models on a byte-identical frozen text set — functional (many-to-one) relations encode as consistent vector arithmetic; symmetric relations do not.
+2. **A silent diacritic-collapse regression in the Ollama runtime** serving mxbai-embed-large: 969,622 cross-entity embedding pairs at cosine >= 0.95 in a 100,113-embedding corpus, diacritical text collapsing into a single `[UNK]`-dominated region. Bisected to Ollama v0.14.0 (2026-01-10): the same model blob is healthy on Ollama <= v0.13.4 and defective on >= v0.14.0. On affected versions "Hokkaid&#333;" and "Eire" receive byte-identical embedding vectors (cosine exactly 1.0), while "Hokkaid&#333;" scores only 0.45 with its own ASCII equivalent "Hokkaido."
 
 ## Prerequisites
 

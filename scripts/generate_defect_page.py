@@ -183,9 +183,13 @@ def fig_collision_heatmap(word2vec):
     cbar.set_label("Cosine Similarity", fontsize=11)
     cbar.outline.set_edgecolor(PAL_BORDER)
 
+    off_diag = ~np.eye(n, dtype=bool)
+    n_high = int(((matrix >= 0.995) & off_diag).sum())
+    n_off = int(off_diag.sum())
+    print(f"  heatmap: {n_high} of {n_off} off-diagonal cells at cosine >= 0.995")
     ax.set_title(
         "Every diacritical word collapses onto every other diacritical word\n"
-        "Cosine similarity ≈ 1.00 for 361 of 380 off-diagonal cells",
+        f"Cosine similarity ≈ 1.00 for {n_high} of {n_off} off-diagonal cells",
         fontsize=14, pad=18, color=PAL_TEXT, fontweight="bold",
     )
     plt.tight_layout()
@@ -282,6 +286,7 @@ def fig_threshold_sweep(word2vec):
     ax.plot(thresholds, counts, "o-", color=PAL_ACCENT,
             markersize=4, linewidth=1.8)
 
+    print(f"  threshold sweep: {count_at_95} of {total} pairs collide at cosine >= 0.95")
     ax.axvline(x=0.95, color=PAL_ACCENT, linestyle="--", alpha=0.7, linewidth=1.3)
     ax.annotate(
         f"{count_at_95} of {total} pairs\ncollide at cosine ≥ 0.95\n({count_at_95/total:.0%} collision rate)",
@@ -336,6 +341,7 @@ def fig_token_analysis(word2vec):
         for c in c_words:
             dc_sims.append(cosine(word2vec[d], word2vec[c]))
 
+    print(f"  token analysis: dd mu={np.mean(dd_sims):.3f}  cc mu={np.mean(cc_sims):.3f}  dc mu={np.mean(dc_sims):.3f}")
     fig, axes = plt.subplots(1, 3, figsize=(16, 6), sharey=False)
 
     panels = [

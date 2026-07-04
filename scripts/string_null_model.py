@@ -19,6 +19,7 @@ import json
 import sys
 import io
 import os
+import random
 from collections import defaultdict
 
 if sys.platform == "win32":
@@ -105,6 +106,16 @@ def main():
             continue
 
         triples = op["triples"]
+
+        # Optional per-predicate triple cap (LSC_NULL_MAX_TRIPLES): the LCS
+        # scoring is an O(len*len) DP against every entity label per triple,
+        # pure Python. On the 2026-07 store (37,893 labels, 70-130 triples per
+        # predicate) the uncapped run projects to days; a seeded random sample
+        # keeps it tractable. Disclose the cap wherever results are reported.
+        max_triples = int(os.environ.get("LSC_NULL_MAX_TRIPLES", "0"))
+        if max_triples and len(triples) > max_triples:
+            rng = random.Random(42)
+            triples = rng.sample(triples, max_triples)
 
         # For each triple, compute string-based prediction
         string_rrs = []

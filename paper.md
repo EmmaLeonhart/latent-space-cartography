@@ -4,9 +4,9 @@
 
 ## Abstract
 
-We report a previously undocumented defect in how the Ollama runtime serves mxbai-embed-large, one of the most widely used open-source text embedding models: on every release from **v0.14.0 (2026-01-10)** onward, diacritic-bearing input collapses into a single `[UNK]`-dominated attractor region, producing 147,687 cross-entity embedding pairs at cosine similarity ≥ 0.95. "Hokkaidō" has cosine similarity 1.0 with "Éire", "Djazaïr", and "Filasṭīn" — unrelated words in different languages — while having cosine similarity of only 0.45 with its own ASCII equivalent "Hokkaido". The failure is silent (the runtime returns a confident-looking vector and raises no error) and benchmark-invisible (MTEB and similar suites do not probe diacritic-rich input at scale), so any RAG system, semantic search engine, or knowledge graph application serving this model through an affected Ollama version has silently degraded on non-ASCII text since 2026-01-10. Crucially, the defect is **not** in the model: the identical registry blob is healthy on Ollama ≤ v0.13.4 (diacritical collision rate ≈ 0, indistinguishable from an ASCII control), and a version bisection over 21 Ollama releases localizes the regression precisely to the v0.13.4 → v0.14.0 runtime boundary.
+We report a previously undocumented defect in how the Ollama runtime serves mxbai-embed-large, one of the most widely used open-source text embedding models: on every release from **v0.14.0 (2026-01-10)** onward, diacritic-bearing input collapses into a single `[UNK]`-dominated attractor region, producing 969,622 cross-entity embedding pairs at cosine similarity ≥ 0.95 in our 100,113-embedding Wikidata corpus. "Hokkaidō", "Éire", "Djazaïr", and "Filasṭīn" — unrelated words in different languages — do not merely embed similarly: the runtime returns **byte-identical vectors** for them (cosine similarity exactly 1.0, because the returned floats are equal), while "Hokkaidō" has cosine similarity of only 0.45 with its own ASCII equivalent "Hokkaido". The failure is silent (the runtime returns a confident-looking vector and raises no error) and benchmark-invisible (MTEB and similar suites do not probe diacritic-rich input at scale), so any RAG system, semantic search engine, or knowledge graph application serving this model through an affected Ollama version has silently degraded on non-ASCII text since 2026-01-10. Crucially, the defect is **not** in the model: the identical registry blob is healthy on Ollama ≤ v0.13.4 (diacritical collision rate ≈ 0, indistinguishable from an ASCII control), and a version bisection over 21 Ollama releases localizes the regression precisely to the v0.13.4 → v0.14.0 runtime boundary.
 
-We found this defect not by targeted fuzzing but as a byproduct of *latent space cartography* — the systematic mapping of structure in pre-trained embedding spaces (Liu et al., 2019). We apply standard TransE-style relational displacement analysis (Bordes et al., 2013) to frozen (non-KGE) embeddings, sweeping over all predicates reachable by breadth-first traversal of a Wikidata knowledge graph; seeding from a Japanese historical text (Engishiki) naturally reaches the romanized, diacritic-rich terminology that standard benchmarks never touch. Applied to mxbai-embed-large (1024-dim), nomic-embed-text (768-dim), and all-minilm (384-dim), the procedure identifies 30 relations that encode as consistent vector displacements across all three models — confirming these are properties of the semantic relationships rather than artifacts of any single model — and a correlation between geometric consistency and prediction accuracy (r = 0.861, 95% CI [0.773, 0.926]) reproduces across models. The same systematic probing that maps an embedding space's relational structure also surfaces the regions where it silently fails. All code, data, and the version-bisection harness are publicly available.
+We found this defect not by targeted fuzzing but as a byproduct of *latent space cartography* — the systematic mapping of structure in pre-trained embedding spaces (Liu et al., 2019). We apply standard TransE-style relational displacement analysis (Bordes et al., 2013) to frozen (non-KGE) embeddings, sweeping over all predicates reachable by breadth-first traversal of a Wikidata knowledge graph; seeding from a Japanese historical text (Engishiki) naturally reaches the romanized, diacritic-rich terminology that standard benchmarks never touch. Applied to mxbai-embed-large (1024-dim), nomic-embed-text (768-dim), and all-minilm (384-dim) — all three embedding the byte-identical frozen text set — the procedure identifies 33 relations that encode as consistent vector displacements across all three models, confirming these are properties of the semantic relationships rather than artifacts of any single model. A correlation between geometric consistency and prediction accuracy holds in mxbai-embed-large (r = 0.882, 95% CI [0.803, 0.940]) and reproduces in all-minilm (r = 0.804), more weakly in nomic-embed-text (r = 0.430). The same systematic probing that maps an embedding space's relational structure also surfaces the regions where it silently fails. All code, data, and the version-bisection harness are publicly available.
 
 ## 1. Introduction
 
@@ -18,19 +18,19 @@ The KGE research program is *constructive*: it builds embedding spaces optimized
 
 The paper has three contributions:
 
-1. **Cross-model relational mapping.** Applied to three models (mxbai-embed-large, nomic-embed-text, all-minilm), the procedure identifies 30 relations that manifest as consistent displacements across all three — confirming that the mapped structure is a property of the semantic relationships, not any particular model. A correlation between consistency and prediction accuracy (r = 0.861) means the consistency metric is self-calibrating.
+1. **Cross-model relational mapping.** Applied to three models (mxbai-embed-large, nomic-embed-text, all-minilm) embedding a byte-identical frozen text set, the procedure identifies 33 relations that manifest as consistent displacements across all three — confirming that the mapped structure is a property of the semantic relationships, not any particular model. A correlation between consistency and prediction accuracy (r = 0.882 in mxbai-embed-large, reproduced at r = 0.804 in all-minilm) means the consistency metric is largely self-calibrating, though the weaker nomic-embed-text correlation (r = 0.430) shows the strength of this property is model-dependent.
 
-2. **Discovery of a silent serving regression.** The same procedure, applied to a domain-specific seed (Engishiki, a Japanese historical text), surfaced a large-scale defect in mxbai-embed-large as served by the Ollama runtime: 147,687 cross-entity embedding pairs at cosine ≥ 0.95. Diacritic-bearing input collapses into a single `[UNK]`-dominated attractor region regardless of text content. This is a serving-stack regression, not a property of the published model weights: the same registry blob is healthy under older Ollama and the failure is silent and benchmark-invisible.
+2. **Discovery of a silent serving regression.** The same procedure, applied to a domain-specific seed (Engishiki, a Japanese historical text), surfaced a large-scale defect in mxbai-embed-large as served by the Ollama runtime: 969,622 cross-entity embedding pairs at cosine ≥ 0.95. Diacritic-bearing input collapses into a single `[UNK]`-dominated attractor region regardless of text content — short diacritical strings receive byte-identical embedding vectors. This is a serving-stack regression, not a property of the published model weights: the same registry blob is healthy under older Ollama and the failure is silent and benchmark-invisible.
 
 3. **Exact provenance via version bisection.** We bisect the regression over 21 Ollama releases and localize it to **Ollama v0.14.0 (2026-01-10)**: clean on ≤ v0.13.4 (diacritical collision rate ≈ 0), defective on every release v0.14.0 → v0.24.0 (≈ 10–11%), with an unchanged model blob throughout. Controlled pairs characterize the symptom on affected versions: the diacritical form of a word (e.g., "Hokkaidō") is more similar to an unrelated diacritical word ("Éire", cosine 1.0) than to its own ASCII equivalent ("Hokkaido", cosine 0.45) — ruling out diacritic *stripping* and pointing to `[UNK]`-token *dominance* in Ollama's tokenization path, not a flaw in the model itself.
 
 ### 1.1 Key Findings
 
-1. **Relational displacement generalizes across models.** Of 159 predicates tested (≥10 triples each), 86 produce consistent displacement vectors in mxbai-embed-large, with 30 universal across all three models. Functional (many-to-one) relations encode as consistent displacements; symmetric relations do not — matching the predictions of the KGE literature (Wang et al., 2014).
+1. **Relational displacement generalizes across models.** Of 268 predicates tested (≥5 triples each), 142 produce consistent displacement vectors in mxbai-embed-large (alignment > 0.5), with 33 universal across all three models. Functional (many-to-one) relations encode as consistent displacements; symmetric relations do not — matching the predictions of the KGE literature (Wang et al., 2014).
 
-2. **Consistency predicts accuracy.** The correlation between geometric consistency and prediction accuracy (r = 0.861, 95% CI [0.773, 0.926]) means the consistency metric functions as a self-calibrating quality indicator. This correlation is not tautological: consistency is computed over all triples, while MRR uses leave-one-out evaluation where each prediction excludes the test triple.
+2. **Consistency predicts accuracy.** The correlation between geometric consistency and prediction accuracy (r = 0.882, 95% CI [0.803, 0.940]) means the consistency metric functions as a self-calibrating quality indicator. This correlation is not tautological: consistency is computed over all triples, while MRR uses leave-one-out evaluation where each prediction excludes the test triple.
 
-3. **A silent serving regression, bisected to Ollama v0.14.0.** The procedure revealed 147,687 cross-entity embedding pairs at cosine ≥ 0.95 — short diacritical strings collapsing, regardless of language/script/meaning, into a single `[UNK]`-dominated region. A version bisection localizes the cause to Ollama v0.14.0 (2026-01-10): the same model blob is clean on Ollama ≤ v0.13.4 and defective on ≥ v0.14.0. Controlled pairs characterize the symptom: "Hokkaidō" ↔ "Éire" = 1.0 cosine, "Hokkaidō" ↔ "Hokkaido" = 0.45 cosine.
+3. **A silent serving regression, bisected to Ollama v0.14.0.** The procedure revealed 969,622 cross-entity embedding pairs at cosine ≥ 0.95 — short diacritical strings collapsing, regardless of language/script/meaning, into a single `[UNK]`-dominated region. A version bisection localizes the cause to Ollama v0.14.0 (2026-01-10): the same model blob is clean on Ollama ≤ v0.13.4 and defective on ≥ v0.14.0. Controlled pairs characterize the symptom: "Hokkaidō" ↔ "Éire" returns byte-identical vectors (cosine exactly 1.0), while "Hokkaidō" ↔ "Hokkaido" = 0.45 cosine.
 
 4. **The regression is silent and systemic.** Standard benchmarks (MTEB, etc.) do not test diacritic-rich input at scale, and the failure raises no error. Any RAG system or semantic search serving mxbai-embed-large via Ollama ≥ v0.14.0 silently fails on queries containing diacritical marks — returning results from the `[UNK]` attractor region — and has done so since that release shipped on 2026-01-10.
 
@@ -90,15 +90,15 @@ The key methodological choice is using **breadth-first search through an existin
 
 BFS from a seed entity is not merely a data collection convenience. It is a **directed probing strategy**: by choosing a seed in a specific domain (e.g., Engishiki, a Japanese historical text), the traversal naturally reaches the entities and terminology that are most relevant to that domain. This means the method systematically tests the embedding space in regions where it may be weakest — regions populated by obscure, non-Latin, or domain-specific terminology that standard benchmarks never touch. A seed in Japanese history pulls in romanized shrine names, historical figures with diacritical marks, and linked entities from Arabic, Irish, and indigenous-language Wikipedia articles. A seed in geography or biography would probe different regions. The choice of seed controls *where* the map is drawn.
 
-1. **Entity Import.** Two seed strategies: (a) Breadth-first search from Engishiki (Q1342448), seeding 500 entities then importing all their triples and linked entities. The BFS expansion produces **34,335 unique entities** (not 500), of which 1,781 contain diacritical marks. With aliases, the total embedding count reaches 41,725. (b) Broad P31 (instance of) sampling across country-level entities to provide a domain-general baseline. Both seeds contribute to the relational displacement analysis (Section 4.1). The collision and collapse-geometry analysis (Section 5.4) runs over the combined embedding store from both seeds — 90,827 embeddings in total — with the Engishiki seed supplying the bulk of the diacritic-rich probes (its 1,781 diacritic-bearing entities) and the country-level seed contributing diacritical place names (Éire, România, Djazaïr).
+1. **Entity Import.** Breadth-first search from Engishiki (Q1342448), fully importing 1,000 entities with all their triples and linked entities. The BFS expansion produces **37,893 unique entities** (not 1,000), of which 1,876 have diacritic-bearing labels. At this depth the crawl subsumes a domain-general baseline on its own: a supplementary P31 (instance of) sweep over country-level entities found 209 of 217 country QIDs already present in the crawl, contributing diacritical place names (Éire, România, Djazaïr) alongside the seed domain's romanized Japanese terminology. All analyses in this paper — relational displacement (Section 4) and collision/collapse geometry (Section 5.4) — run over this single frozen snapshot.
 
-2. **Embedding.** Each entity's English label is embedded using mxbai-embed-large (1024-dim) via Ollama. Aliases receive separate embeddings. Total: 41,725 embeddings from the Engishiki seed. Labels are short text strings (typically 1-5 words), consistent with how these models are used in practice for entity linking and retrieval.
+2. **Embedding.** Each entity's English label is embedded using mxbai-embed-large (1024-dim) via Ollama. Aliases receive separate embeddings. Total: **100,113 embeddings**. Labels are short text strings (typically 1-5 words), consistent with how these models are used in practice for entity linking and retrieval. For the cross-model analysis (Section 4.6), the identical frozen text set is re-embedded with each additional model, so all models see byte-identical input.
 
-3. **Relational Displacement Computation.** For each entity-entity triple, compute the displacement vector between subject and object label embeddings. Total: 16,893 entity-entity triples across 1,472 unique predicates. This is the standard `h + r ≈ t` test from TransE, applied without training.
+3. **Relational Displacement Computation.** For each entity-entity triple where both ends have embeddings, compute the displacement vector between subject and object label embeddings. Total: 111,507 entity-entity triples, of which 268 predicates meet the ≥5-triple analysis threshold. This is the standard `h + r ≈ t` test from TransE, applied without training.
 
 ### 3.3 Discovery Procedure
 
-For each predicate $p$ with $\geq 10$ entity-entity triples:
+For each predicate $p$ with $\geq 5$ entity-entity triples:
 
 1. Compute all relational displacements $\{\mathbf{g}_i\}$
 2. Compute mean displacement $\mathbf{d}_p$
@@ -132,13 +132,13 @@ and evaluate whether the true $o$ appears in the top-k nearest neighbors. We tes
 
 ### 4.1 Operation Discovery
 
-Of 159 predicates with ≥10 triples, 86 (54.1%) produce consistent displacement vectors:
+Of 268 predicates with ≥5 triples, 142 (53.0%) produce consistent displacement vectors:
 
 | Category | Count | Alignment Range |
 |----------|-------|-----------------|
-| Strong operations | 32 | > 0.7 |
-| Moderate operations | 54 | 0.5 – 0.7 |
-| Weak/no operation | 73 | < 0.5 |
+| Strong operations | 54 | > 0.7 |
+| Moderate operations | 88 | 0.5 – 0.7 |
+| Weak/no operation | 126 | < 0.5 |
 
 **Table 1.** Distribution of discovered operations by consistency.
 
@@ -146,73 +146,73 @@ The top 15 discovered operations:
 
 | Predicate | Label | N | Alignment | Pairwise | MagCV | Cos Dist |
 |-----------|-------|---|-----------|----------|-------|----------|
-| P8324 | funder | 25 | 0.930 | 0.859 | 0.079 | 0.447 |
-| P2633 | geography of topic | 18 | 0.910 | 0.819 | 0.097 | 0.200 |
-| P9241 | demographics of topic | 21 | 0.899 | 0.799 | 0.080 | 0.215 |
-| P2596 | culture | 16 | 0.896 | 0.790 | 0.063 | 0.202 |
-| P5125 | Wikimedia outline | 20 | 0.887 | 0.777 | 0.089 | 0.196 |
-| P7867 | category for maps | 29 | 0.878 | 0.763 | 0.099 | 0.205 |
-| P8744 | economy of topic | 30 | 0.870 | 0.749 | 0.094 | 0.182 |
-| P1740 | cat. for films shot here | 18 | 0.862 | 0.728 | 0.121 | 0.266 |
-| P1791 | cat. for people buried here | 13 | 0.857 | 0.714 | 0.121 | 0.302 |
-| P1465 | cat. for people who died here | 29 | 0.857 | 0.725 | 0.124 | 0.249 |
-| P163 | flag | 31 | 0.855 | 0.723 | 0.123 | 0.208 |
-| P2746 | production statistics | 11 | 0.850 | 0.696 | 0.048 | 0.411 |
-| P1923 | participating team | 32 | 0.831 | 0.681 | 0.042 | 0.387 |
-| P1464 | cat. for people born here | 32 | 0.814 | 0.653 | 0.145 | 0.265 |
-| P237 | coat of arms | 21 | 0.798 | 0.620 | 0.138 | 0.268 |
+| P5203 | topographic map | 5 | 0.947 | 0.871 | 0.039 | 0.245 |
+| P8625 | bibliography | 9 | 0.920 | 0.827 | 0.073 | 0.288 |
+| P12933 | relates to sustainable development goal | 5 | 0.918 | 0.804 | 0.009 | 0.512 |
+| P5817 | state of use | 11 | 0.903 | 0.796 | 0.026 | 0.587 |
+| P1740 | cat. for films shot here | 81 | 0.890 | 0.790 | 0.111 | 0.261 |
+| P9241 | demographics of topic | 84 | 0.889 | 0.788 | 0.098 | 0.234 |
+| P2633 | geography of topic | 80 | 0.885 | 0.780 | 0.122 | 0.211 |
+| P2596 | culture | 71 | 0.879 | 0.770 | 0.103 | 0.219 |
+| P14122 | cat. for music in this language | 13 | 0.879 | 0.755 | 0.098 | 0.250 |
+| P5996 | cat. for films in this language | 15 | 0.879 | 0.756 | 0.099 | 0.268 |
+| P5125 | Wikimedia outline | 88 | 0.871 | 0.757 | 0.143 | 0.209 |
+| P1791 | cat. for people buried here | 70 | 0.867 | 0.748 | 0.126 | 0.286 |
+| P4614 | drainage basin | 6 | 0.864 | 0.697 | 0.053 | 0.424 |
+| P7867 | category for maps or plans | 127 | 0.859 | 0.737 | 0.138 | 0.217 |
+| P8744 | economy of topic | 126 | 0.857 | 0.732 | 0.139 | 0.194 |
 
 **Table 2.** Top 15 relations by displacement consistency (alignment with mean displacement). N = number of triples. Pairwise = mean cosine similarity between all pairs of displacements. MagCV = coefficient of variation of displacement magnitudes. Cos Dist = mean cosine distance between subject and object.
 
 ### 4.2 Prediction Accuracy
 
-Leave-one-out evaluation of all 86 discovered operations:
+Leave-one-out evaluation of the top 50 discovered operations:
 
 | Predicate | Label | N | Align | MRR | H@1 | H@10 | H@50 |
 |-----------|-------|---|-------|-----|-----|------|------|
-| P9241 | demographics of topic | 21 | 0.899 | 1.000 | 1.000 | 1.000 | 1.000 |
-| P2596 | culture | 16 | 0.896 | 1.000 | 1.000 | 1.000 | 1.000 |
-| P7867 | category for maps | 29 | 0.878 | 1.000 | 1.000 | 1.000 | 1.000 |
-| P8744 | economy of topic | 30 | 0.870 | 1.000 | 1.000 | 1.000 | 1.000 |
-| P5125 | Wikimedia outline | 20 | 0.887 | 0.975 | 0.950 | 1.000 | 1.000 |
-| P2633 | geography of topic | 18 | 0.910 | 0.972 | 0.944 | 1.000 | 1.000 |
-| P1465 | cat. for people who died here | 29 | 0.857 | 0.966 | 0.966 | 0.966 | 0.966 |
-| P163 | flag | 31 | 0.855 | 0.937 | 0.903 | 0.968 | 1.000 |
-| P8324 | funder | 25 | 0.930 | 0.929 | 0.920 | 0.960 | 0.960 |
-| P1464 | cat. for people born here | 32 | 0.814 | 0.922 | 0.906 | 0.938 | 0.938 |
-| P237 | coat of arms | 21 | 0.798 | 0.858 | 0.762 | 0.952 | 1.000 |
-| P21 | sex or gender | 91 | 0.674 | 0.422 | 0.121 | 0.945 | 0.989 |
-| P27 | country of citizenship | 37 | 0.690 | 0.401 | 0.162 | 0.892 | 0.973 |
+| P5817 | state of use | 11 | 0.903 | 1.000 | 1.000 | 1.000 | 1.000 |
+| P9241 | demographics of topic | 84 | 0.889 | 0.986 | 0.976 | 1.000 | 1.000 |
+| P1740 | cat. for films shot here | 81 | 0.890 | 0.981 | 0.975 | 0.988 | 0.988 |
+| P8744 | economy of topic | 126 | 0.857 | 0.970 | 0.952 | 0.992 | 0.992 |
+| P7867 | category for maps or plans | 127 | 0.859 | 0.967 | 0.945 | 0.992 | 0.992 |
+| P2596 | culture | 71 | 0.879 | 0.962 | 0.930 | 1.000 | 1.000 |
+| P2633 | geography of topic | 80 | 0.885 | 0.955 | 0.925 | 0.988 | 1.000 |
+| P1791 | cat. for people buried here | 70 | 0.867 | 0.950 | 0.943 | 0.957 | 0.957 |
+| P14122 | cat. for music in this language | 13 | 0.879 | 0.942 | 0.923 | 1.000 | 1.000 |
+| P5125 | Wikimedia outline | 88 | 0.871 | 0.939 | 0.898 | 0.989 | 0.989 |
+| P8324 | funder | 45 | 0.814 | 0.934 | 0.933 | 0.933 | 0.933 |
+| P21 | sex or gender | 97 | 0.666 | 0.368 | 0.082 | 0.918 | 0.990 |
+| P27 | country of citizenship | 42 | 0.671 | 0.270 | 0.048 | 0.881 | 0.952 |
 
-**Table 3.** Prediction results for selected operations (full table for all 86 operations in the linked repository). MRR = Mean Reciprocal Rank. H@k = Hits at rank k. The four predicates achieving MRR = 1.000 are functional predicates with highly consistent Wikidata naming conventions (e.g., every country has exactly one "Demographics of [Country]" article). Perfect MRR is expected when: (a) the predicate is strictly functional (one object per subject), (b) the displacement is consistent (alignment > 0.87), and (c) the object label is semantically close to a predictable transformation of the subject. Crucially, the string overlap null model (Section 4.4) confirms this is not a string manipulation artifact: these same predicates achieve string MRR of only 0.008–0.046 vs. vector MRR of 1.000. The embedding captures the semantic operation; the label convention merely makes the target unambiguous among 41,725 candidates.
+**Table 3.** Prediction results for selected operations (full table in the linked repository). MRR = Mean Reciprocal Rank. H@k = Hits at rank k. Near-perfect MRR occurs for functional predicates with highly consistent Wikidata naming conventions (e.g., every country has exactly one "Demographics of [Country]" article); on this snapshot only P5817 (state of use, n=11) achieves MRR = 1.000 exactly, with the strongest functional predicates clustering at 0.93–0.99. High MRR is expected when: (a) the predicate is strictly functional (one object per subject), (b) the displacement is consistent (alignment > 0.85), and (c) the object label is semantically close to a predictable transformation of the subject. Crucially, the string overlap null model (Section 4.4) confirms this is not a string manipulation artifact. The embedding captures the semantic operation; the label convention merely makes the target unambiguous among 100,113 candidates.
 
-**Aggregate statistics across all 86 operations:**
+**Aggregate statistics across the top 50 operations (those retained for prediction evaluation):**
 
 | Metric | Value | 95% Bootstrap CI |
 |--------|-------|-----------------|
-| Mean MRR | 0.350 | — |
-| Mean Hits@1 | 0.252 | — |
-| Mean Hits@10 | 0.550 | — |
-| Mean Hits@50 | 0.699 | — |
-| Correlation (alignment ↔ MRR) | r = 0.861 | [0.773, 0.926] |
-| Correlation (alignment ↔ H@1) | r = 0.848 | [0.721, 0.932] |
-| Correlation (alignment ↔ H@10) | r = 0.625 | [0.469, 0.760] |
-| Effect size: strong vs moderate MRR (Cohen's d) | 3.092 | (large) |
+| Mean MRR | 0.637 | — |
+| Mean Hits@1 | 0.517 | — |
+| Mean Hits@10 | 0.868 | — |
+| Mean Hits@50 | 0.924 | — |
+| Correlation (alignment ↔ MRR) | r = 0.882 | [0.803, 0.940] |
+| Correlation (alignment ↔ H@1) | r = 0.863 | [0.723, 0.946] |
+| Correlation (alignment ↔ H@10) | r = 0.719 | [0.577, 0.859] |
+| Effect size: strong vs moderate MRR (Cohen's d) | 2.906 | (large) |
 
-**Table 4.** Aggregate prediction statistics with bootstrap confidence intervals (10,000 resamples). All correlations survive Bonferroni correction across 3 tests (adjusted alpha = 0.017).
+**Table 4.** Aggregate prediction statistics with bootstrap confidence intervals (10,000 resamples). All correlations survive Bonferroni correction across 3 tests (adjusted alpha = 0.017). Across all 268 analyzed predicates (including weak ones), the alignment ↔ MRR correlation is r = 0.779.
 
-The correlation between displacement consistency and prediction accuracy (r = 0.861, 95% CI [0.773, 0.926]) is practically useful as a quality filter. We note that this correlation has a natural mathematical component: when displacement variance is low (high consistency), the mean displacement is by construction a better predictor. However, the correlation is not fully tautological: consistency is computed over all triples, while MRR uses **leave-one-out** evaluation where each prediction excludes the test triple, and a high-consistency predicate could still have poor MRR if the predicted region is crowded with non-target entities. The effect size between strong (>0.7) and moderate (0.5-0.7) operations is Cohen's d = 3.092, indicating the 0.7 threshold cleanly separates high-performing from marginal operations.
+The correlation between displacement consistency and prediction accuracy (r = 0.882, 95% CI [0.803, 0.940]) is practically useful as a quality filter. We note that this correlation has a natural mathematical component: when displacement variance is low (high consistency), the mean displacement is by construction a better predictor. However, the correlation is not fully tautological: consistency is computed over all triples, while MRR uses **leave-one-out** evaluation where each prediction excludes the test triple, and a high-consistency predicate could still have poor MRR if the predicted region is crowded with non-target entities. The effect size between strong (>0.7) and moderate (0.5-0.7) operations is Cohen's d = 2.906, indicating the 0.7 threshold cleanly separates high-performing from marginal operations.
 
 ### 4.3 Two-Hop Composition
 
-Over 5,000 tested two-hop compositions (S + d₁ + d₂):
+Over 5,000 tested two-hop compositions (S + d₁ + d₂), using 108 discovered operations:
 
 | Metric | Value |
 |--------|-------|
-| Hits@1 | 0.058 (288/5000) |
-| Hits@10 | 0.283 (1414/5000) |
-| Hits@50 | 0.479 (2396/5000) |
-| Mean Rank | 1029.8 |
+| Hits@1 | 0.061 (306/5000) |
+| Hits@10 | 0.304 (1518/5000) |
+| Hits@50 | 0.545 (2726/5000) |
+| Mean Rank | 1126.1 |
 
 **Table 5.** Two-hop composition results.
 
@@ -220,30 +220,29 @@ Selected successful compositions (Rank ≤ 5):
 
 | Chain | Rank |
 |-------|------|
-| Tadahira →[citizenship]→ Japan →[history of topic]→ history of Japan | 1 |
-| Tadahira →[citizenship]→ Japan →[flag]→ flag of Japan | 1 |
-| Tadahira →[citizenship]→ Japan →[cat. people buried here]→ Category:Burials in Japan | 2 |
-| Tadahira →[citizenship]→ Japan →[cat. people who died here]→ Category:Deaths in Japan | 2 |
-| Tadahira →[citizenship]→ Japan →[cat. associated people]→ Category:Japanese people | 3 |
-| Tadahira →[citizenship]→ Japan →[head of state]→ Emperor of Japan | 4 |
-| Tadahira →[sex or gender]→ male →[main category]→ Category:Male | 5 |
+| Japan →[cat. associated people]→ Category:Japanese people →[main topic]→ Japanese people | 1 |
+| Japan →[history of topic]→ history of Japan →[topic's main category]→ Category:History of Japan | 1 |
+| Japan →[history of topic]→ history of Japan →[WikiProject]→ WikiProject Japanese history | 1 |
+| Japan →[cat. people buried here]→ Category:Burials in Japan →[country]→ Japan | 2 |
+| Japan →[cat. people who died here]→ Category:Deaths in Japan →[country]→ Japan | 4 |
+| Japan →[public holiday]→ National Foundation Day →[topic's main category]→ Category:National Foundation Day of Japan | 5 |
 
-**Table 6.** Successful two-hop compositions. Note: all examples involve Fujiwara no Tadahira because our dataset is seeded from Engishiki (Q1342448), a Japanese historical text. Tadahira is one of the most densely connected entities in this neighborhood, appearing in many two-hop paths. The composition mechanism itself is general — the examples reflect dataset composition, not a limitation of the method.
+**Table 6.** Successful two-hop compositions. Note: all examples involve Japan because our dataset is seeded from Engishiki (Q1342448), a Japanese historical text — Japan is the most densely connected entity in this neighborhood, appearing in many two-hop paths. The composition mechanism itself is general — the examples reflect dataset composition, not a limitation of the method.
 
 ### 4.4 String Overlap Null Model
 
 A potential concern is that the discovered displacements merely capture string-level patterns — e.g., the displacement for "history of topic" (P2184) might simply encode the string prefix "History of" rather than relational knowledge. We test this with a string overlap null model: for each triple $(s, p, o)$, we rank all entities by longest common substring ratio with the subject label. If string overlap achieves comparable MRR to vector arithmetic, the displacement is trivially explained by surface patterns.
 
-**Result: Vector arithmetic outperforms string overlap in 39/39 tested predicates (100%).** No predicate is trivially string-based.
+**Result: Vector arithmetic outperforms string overlap in 27/27 tested predicates (100%).** No predicate is trivially string-based. (For tractability, the string baselines rank all 37,893 entity labels per prediction and are evaluated on a seeded random sample of up to 10 triples per predicate; vector MRR is computed on the full triple sets.)
 
 | Metric | Vector Arithmetic | String Overlap (LCS) | Token Overlap |
 |--------|------------------|---------------------|---------------|
-| Mean MRR | 0.633 | 0.013 | 0.056 |
-| Predicates with MRR > 0.5 | 24 | 0 | 0 |
+| Mean MRR | 0.850 | 0.019 | 0.063 |
+| Predicates with MRR > 0.5 | 26 | 0 | 0 |
 
-The gap is not marginal: mean vector MRR is 49× higher than string MRR. Even the strongest string overlap scores (max 0.093 for P163 "flag") are far below the corresponding vector MRR (0.937). The 24 predicates with vector MRR > 0.5 all have string MRR < 0.1, confirming that the embedding captures relational structure that cannot be recovered from label text alone.
+The gap is not marginal: mean vector MRR is 44× higher than string MRR. Even the strongest string overlap score (0.088 for P163 "flag") is far below the corresponding vector MRR (0.928). The 26 predicates with vector MRR > 0.5 all have string MRR < 0.1, confirming that the embedding captures relational structure that cannot be recovered from label text alone.
 
-**Limitations of this baseline.** The string overlap null model is deliberately simple — it tests whether vector arithmetic reduces to substring matching, not whether it outperforms all possible string-based methods. A more sophisticated baseline (e.g., regex pattern matching for predicates like "Demographics of [X]", or edit-distance heuristics) would likely close some of the gap for the most formulaic predicates. The 49× ratio should be interpreted as evidence that the displacement is not a trivial string artifact, not as a claim about the difficulty of the prediction task itself. For the most formulaic predicates (demographics-of, geography-of), the prediction is easy by any method — the interesting finding is that vector arithmetic also works for predicates without formulaic naming (flag, coat of arms, head of state).
+**Limitations of this baseline.** The string overlap null model is deliberately simple — it tests whether vector arithmetic reduces to substring matching, not whether it outperforms all possible string-based methods. A more sophisticated baseline (e.g., regex pattern matching for predicates like "Demographics of [X]", or edit-distance heuristics) would likely close some of the gap for the most formulaic predicates. The 44× ratio should be interpreted as evidence that the displacement is not a trivial string artifact, not as a claim about the difficulty of the prediction task itself. For the most formulaic predicates (demographics-of, geography-of), the prediction is easy by any method — the interesting finding is that vector arithmetic also works for predicates without formulaic naming (flag, coat of arms, head of state).
 
 ### 4.5 Failure Analysis
 
@@ -251,16 +250,16 @@ Predicates that resist vector encoding:
 
 | Predicate | Label | N | Alignment | Pattern |
 |-----------|-------|---|-----------|---------|
-| P3373 | sibling | 661 | 0.026 | Symmetric |
-| P155 | follows | 89 | 0.050 | Sequence (variable direction) |
-| P156 | followed by | 86 | 0.053 | Sequence (variable direction) |
-| P1889 | different from | 222 | 0.109 | Symmetric/diverse |
-| P279 | subclass of | 168 | 0.118 | Hierarchical (variable depth) |
-| P26 | spouse | 138 | 0.135 | Symmetric |
-| P40 | child | 254 | 0.142 | Variable direction |
-| P47 | shares border with | 197 | 0.162 | Symmetric |
-| P530 | diplomatic relation | 930 | 0.165 | Symmetric |
-| P31 | instance of | 835 | 0.244 | Too semantically diverse |
+| P3373 | sibling | 667 | 0.026 | Symmetric |
+| P156 | followed by | 121 | 0.064 | Sequence (variable direction) |
+| P47 | shares border with | 830 | 0.085 | Symmetric |
+| P1889 | different from | 558 | 0.088 | Symmetric/diverse |
+| P530 | diplomatic relation | 4775 | 0.096 | Symmetric |
+| P279 | subclass of | 367 | 0.101 | Hierarchical (variable depth) |
+| P155 | follows | 158 | 0.121 | Sequence (variable direction) |
+| P26 | spouse | 145 | 0.129 | Symmetric |
+| P40 | child | 264 | 0.135 | Variable direction |
+| P31 | instance of | 1759 | 0.202 | Too semantically diverse |
 
 **Table 7.** Predicates with lowest consistency. Pattern = our characterization of why the displacement is inconsistent.
 
@@ -272,31 +271,31 @@ Three failure modes emerge:
 
 3. **Semantically overloaded predicates** (instance-of, subclass-of, part-of): "Tokyo is an instance of city" and "7 is an instance of prime number" produce wildly different displacement vectors because the predicate covers too many semantic domains.
 
-**Instance-of (P31) at 0.244 is particularly notable.** It is the most important predicate in Wikidata (835 triples in our dataset) and a cornerstone of first-order logic, yet it does not function as a vector operation. This suggests that embedding spaces systematically under-represent relational structure: the space encodes *entities* well but *predicates* poorly.
+**Instance-of (P31) at 0.202 is particularly notable.** It is the most important predicate in Wikidata (1,759 triples in our dataset) and a cornerstone of first-order logic, yet it does not function as a vector operation. This suggests that embedding spaces systematically under-represent relational structure: the space encodes *entities* well but *predicates* poorly.
 
 ### 4.6 Cross-Model Generalization
 
-To test whether discovered operations are model-agnostic or artifacts of a single model's training, we ran the full pipeline on two additional embedding models: nomic-embed-text (768-dim) and all-minilm (384-dim). All three runs used the same pipeline parameters — BFS from Engishiki (Q1342448) with --limit 500 — but the imports were executed at different times against live Wikidata, so each run's entity and alias set (and therefore its embedding count, Table 8) differs as the graph grew between runs. The cross-model comparison is therefore made at the *predicate* level, over predicates shared between model pairs, not over an identical entity set.
+To test whether discovered operations are model-agnostic or artifacts of a single model's training, we re-embedded the **byte-identical frozen text set** (all 100,113 entity and alias labels from the snapshot of Section 3.2) with two additional embedding models: nomic-embed-text (768-dim) and all-minilm (384-dim). Unlike a re-crawl, this guarantees every model sees exactly the same input; any difference in discovered structure is attributable to the model alone.
 
-| Model | Dimensions | Embeddings | Discovered | Strong (>0.7) |
+| Model | Dimensions | Embeddings | Discovered (>0.5) | Strong (>0.7) |
 |-------|-----------|-----------|------------|---------------|
-| mxbai-embed-large | 1024 | 41,725 | 86 | 32 |
-| nomic-embed-text | 768 | 69,111 | 101 | 54 |
-| all-minilm | 384 | 54,375 | 109 | 41 |
+| mxbai-embed-large | 1024 | 100,113 | 142 | 54 |
+| nomic-embed-text | 768 | 100,113 | 148 | 80 |
+| all-minilm | 384 | 100,113 | 163 | 68 |
 
-**Table 8.** Operations discovered per model. All three models discover operations despite different architectures and dimensionalities.
+**Table 8.** Operations discovered per model on identical input (268 predicates analyzed in each). All three models discover operations despite different architectures and dimensionalities.
 
-**30 operations are universal** — discovered by all three models. These include demographics-of-topic (avg alignment 0.925), culture (0.923), economy-of-topic (0.896), flag (0.883), coat of arms (0.777), and central bank (0.793). The universal operations are exclusively functional predicates, confirming the functional-vs-relational split across architectures.
+**33 operations are universal** — present in the top-50 operation list of all three models. These include topographic-map (avg alignment 0.962), bibliography (0.945), state-of-use (0.939), demographics-of-topic (0.926), culture (0.919), economy-of-topic (0.895), and flag (0.881). The universal operations are exclusively functional predicates, confirming the functional-vs-relational split across architectures.
 
 | Overlap Category | Count |
 |-----------------|-------|
-| Found by all 3 models | 30 |
-| Found by 2 models | 15 |
-| Found by 1 model only | 30 |
+| Found by all 3 models | 33 |
+| Found by 2 models | 16 |
+| Found by 1 model only | 19 |
 
-**Table 9.** Cross-model operation overlap. 30 universal operations constitute the model-agnostic core.
+**Table 9.** Cross-model operation overlap, computed over each model's top-50 operations by alignment. 33 universal operations constitute the model-agnostic core.
 
-Cross-model consistency correlations (alignment scores on shared predicates): mxbai vs all-minilm r = 0.779, mxbai vs nomic r = 0.554, nomic vs all-minilm r = 0.358. The positive correlations confirm that consistency is not random — predicates that work well in one model tend to work well in others, though the strength varies by model pair.
+Cross-model consistency correlations (alignment scores on shared predicates): mxbai vs all-minilm r = 0.901 (n = 46), mxbai vs nomic r = 0.436 (n = 36), nomic vs all-minilm r = 0.623 (n = 33). The positive correlations confirm that consistency is not random — predicates that work well in one model tend to work well in others, though the strength varies by model pair.
 
 **The same relational structure emerges across three unrelated embedding models** with different architectures, different dimensionalities, and different training data. The discovered operations are properties of the semantic relationships themselves, not artifacts of any particular model.
 
@@ -310,7 +309,7 @@ That this pattern holds in general-purpose text embedding models — models with
 
 ### 5.2 The Consistency-Accuracy Correlation
 
-The r = 0.861 correlation between consistency and prediction accuracy is useful as a practical quality indicator but should not be overstated. There is a natural mathematical tendency for low-variance displacement vectors (high consistency) to produce better mean-based predictions — if all displacements point roughly the same direction, the mean will be a good predictor almost by construction. The correlation is therefore partly a geometric property of high-dimensional spaces, not purely an empirical discovery about these specific embedding models. What *is* empirically informative is the magnitude of the effect size between strong and moderate operations (Cohen's d = 3.092), which suggests the consistency threshold at 0.7 cleanly separates operations that work well from those that do not. The correlation is practically useful as a quality filter, even if its theoretical status is less remarkable than "self-diagnostic" framing might suggest.
+The r = 0.882 correlation between consistency and prediction accuracy is useful as a practical quality indicator but should not be overstated. There is a natural mathematical tendency for low-variance displacement vectors (high consistency) to produce better mean-based predictions — if all displacements point roughly the same direction, the mean will be a good predictor almost by construction. The correlation is therefore partly a geometric property of high-dimensional spaces, not purely an empirical discovery about these specific embedding models — and its strength is model-dependent (0.882 in mxbai-embed-large and 0.804 in all-minilm, but only 0.430 in nomic-embed-text on identical input). What *is* empirically informative is the magnitude of the effect size between strong and moderate operations (Cohen's d = 2.906), which suggests the consistency threshold at 0.7 cleanly separates operations that work well from those that do not. The correlation is practically useful as a quality filter, even if its theoretical status is less remarkable than "self-diagnostic" framing might suggest.
 
 ### 5.3 Collision Geography
 
@@ -318,11 +317,11 @@ We independently measure two properties of each embedding: (a) its local density
 
 ### 5.4 The Embedding Collapse: a Diacritic-Tokenization Regression in the Ollama Runtime
 
-**A previously unreported regression in a widely-used serving stack.** mxbai-embed-large is one of the most popular open-source embedding models, very commonly served via Ollama in RAG systems, semantic search, and knowledge graph applications. The defect we report — affecting over 16,000 embedded labels and producing 147,687 colliding embedding pairs — appears to have gone undetected because standard embedding benchmarks (MTEB, etc.) do not systematically probe non-Latin or diacritic-rich inputs at scale; a BFS traversal from a domain-specific seed does, because the knowledge graph naturally reaches the obscure terminology that benchmarks miss. As Section 5.4.1 establishes by version bisection, the defect is **not** intrinsic to the model: it is a regression in the Ollama runtime introduced in v0.14.0 (2026-01-10).
+**A previously unreported regression in a widely-used serving stack.** mxbai-embed-large is one of the most popular open-source embedding models, very commonly served via Ollama in RAG systems, semantic search, and knowledge graph applications. The defect we report — affecting 18,019 embedded labels and producing 969,622 colliding embedding pairs in our corpus — appears to have gone undetected because standard embedding benchmarks (MTEB, etc.) do not systematically probe non-Latin or diacritic-rich inputs at scale; a BFS traversal from a domain-specific seed does, because the knowledge graph naturally reaches the obscure terminology that benchmarks miss. As Section 5.4.1 establishes by version bisection, the defect is **not** intrinsic to the model: it is a regression in the Ollama runtime introduced in v0.14.0 (2026-01-10).
 
-**The Jinmyōchō collapse.** Our collision analysis finds 147,687 cross-entity embedding pairs with cosine similarity ≥ 0.95 that represent genuine semantic collisions: different text mapped to near-identical vectors. This count reflects *pairwise* collisions: if $k$ entities cluster together, they contribute $\binom{k}{2}$ pairs. The 147,687 total arises from 16,067 embeddings (of the 90,827 in the combined two-seed store; Section 3.2) participating in at least one collision, organized into clusters of varying size. "Jinmyōchō" (the register of officially listed shrines in the Engishiki) collides with 504 unique texts spanning romanized Japanese (kugyō, Shōtai), Arabic (Djazaïr, Filasṭīn), Irish (Éire), Brazilian indigenous languages (Aikanã, Amanayé), and IPA characters — words that share no orthographic or semantic relationship whatsoever.
+**The Jinmyōchō collapse.** Our collision analysis (run on Ollama v0.17.1, within the defective version range established in Section 5.4.1) finds 969,622 cross-entity embedding pairs with cosine similarity ≥ 0.95 that represent genuine semantic collisions: different text mapped to near-identical vectors. This count reflects *pairwise* collisions: if $k$ entities cluster together, they contribute $\binom{k}{2}$ pairs. The 969,622 total arises from 18,019 embeddings (of the 100,113 in the store; Section 3.2) participating in at least one collision, organized into clusters of varying size. "Jinmyōchō" (the register of officially listed shrines in the Engishiki) alone collides with 1,189 unique texts spanning romanized Japanese (kugyō, Shōtai), Arabic (Djazaïr, Filasṭīn), Irish (Éire), Brazilian indigenous languages (Aikanã, Amanayé), and IPA characters — words that share no orthographic or semantic relationship whatsoever.
 
-![Pairwise cosine similarity among short diacritic-bearing labels served by Ollama v0.14.0+. With a single exception (São Paulo, a longer multi-word label), all 361 of 380 off-diagonal cells sit at cosine ≈ 1.00: every diacritical word collapses onto every other diacritical word. This is the `[UNK]`-dominated attractor region.](docs/figures/collision_heatmap.png){width=78%}
+![Pairwise cosine similarity among 20 short diacritic-bearing labels served by Ollama v0.14.0+. With a single exception (São Paulo, a longer multi-word label, accounting for all 38 sub-threshold cells — its row and column), 342 of 380 off-diagonal cells sit at cosine ≈ 1.00: every diacritical word collapses onto every other diacritical word. This is the `[UNK]`-dominated attractor region.](docs/figures/collision_heatmap.png){width=78%}
 
 **The symptom is `[UNK]` token dominance, not diacritic stripping.** If the tokenizer simply stripped diacritics, "Hokkaidō" would become "Hokkaido" and "Djazaïr" would become "Djazair" — different strings that should produce different embeddings. The observed failure mode on affected Ollama versions is more severe:
 
@@ -339,15 +338,15 @@ This is a property of the *runtime*, not the model weights. The same mxbai-embed
 
 | Pair | Cosine Similarity | Interpretation |
 |------|------------------|----------------|
-| "Hokkaidō" ↔ "Éire" | 1.000 | Different languages, different meanings — identical embedding |
-| "Jinmyōchō" ↔ "Filasṭīn" | 1.000 | Japanese ↔ Arabic — identical embedding |
-| "Djazaïr" ↔ "România" | 1.000 | Arabic ↔ Romanian — identical embedding |
-| "naïve" ↔ "Zürich" | 1.000 | French ↔ German — identical embedding |
-| "Hokkaidō" ↔ "Hokkaido" | 0.450 | Same word, diacritic vs. ASCII — **dissimilar** |
-| "Tōkyō" ↔ "Tokyo" | 0.500 | Same word, diacritic vs. ASCII — **dissimilar** |
-| "Tokyo" ↔ "Berlin" | 0.751 | Control: two capitals — normal similarity |
+| "Hokkaidō" ↔ "Éire" | 1.0000 (byte-identical vectors) | Different languages, different meanings — same embedding |
+| "Jinmyōchō" ↔ "Filasṭīn" | 1.0000 (byte-identical vectors) | Japanese ↔ Arabic — same embedding |
+| "Djazaïr" ↔ "România" | 1.0000 (byte-identical vectors) | Arabic ↔ Romanian — same embedding |
+| "naïve" ↔ "Zürich" | 1.0000 (byte-identical vectors) | French ↔ German — same embedding |
+| "Hokkaidō" ↔ "Hokkaido" | 0.4500 | Same word, diacritic vs. ASCII — **dissimilar** |
+| "Tōkyō" ↔ "Tokyo" | 0.5004 | Same word, diacritic vs. ASCII — **dissimilar** |
+| "Tokyo" ↔ "Berlin" | 0.7510 | Control: two capitals — normal similarity |
 
-**Table 10.** Controlled collision pairs. The diacritical version of a word is more similar to an unrelated diacritical word in a different language (cosine 1.0) than to its own ASCII equivalent (cosine ~0.45). This rules out diacritic stripping as the mechanism: if the model stripped diacritics and embedded the ASCII form, "Hokkaidō" would be close to "Hokkaido", not to "Éire". Instead, the `[UNK]` tokens overwhelm the embedding, and all `[UNK]`-dominated inputs converge to the same point.
+**Table 10.** Controlled collision pairs, measured on Ollama v0.17.1. The cosine of 1.0 for the collided pairs is not a rounding artifact: the runtime returns **byte-identical float vectors** for these unrelated inputs (verified by exact array equality), exactly as expected if every short `[UNK]`-dominated token sequence pools to the same representation. The diacritical version of a word is thus *more* similar to an unrelated diacritical word in a different language than to its own ASCII equivalent (cosine ~0.45). This rules out diacritic stripping as the mechanism: if the model stripped diacritics and embedded the ASCII form, "Hokkaidō" would be close to "Hokkaido", not to "Éire".
 
 ![The paradox of Table 10 at scale: a diacritical word is more similar to an *unrelated* diacritical word in a different language (red, ≈ 1.0) than to its own ASCII form (blue, ≈ 0.45). If the runtime merely stripped diacritics, the blue bars would sit near 1.0; instead the matched same-word pairs are the *dissimilar* ones.](docs/figures/diacritic_vs_plain.png){width=98%}
 
@@ -364,13 +363,13 @@ A natural objection is that this is a long-standing flaw in mxbai-embed-large's 
 
 **Table 11.** Ollama version bisection. A clean, single-release boundary: every release through v0.13.4 (2025-12-13) is healthy; the regression appears at v0.14.0 (2026-01-10) and persists through the current v0.24.0. Because the model is byte-identical across the boundary, the defect is unambiguously a regression in the Ollama serving runtime, introduced at the v0.13.4 → v0.14.0 boundary. It is therefore recent (not "years old") and reproduces deterministically on a pinned v0.14.0+ runtime — which is how our CI now asserts it (a two-sided test: must be clean on v0.13.4, must reproduce on v0.14.0). Identifying the precise upstream commit within that release is left to Ollama maintainers; the v0.14.0 changelog notably includes an embedding-path change ("an error will now return when embeddings return `NaN` or `-Inf`"). We have reported the regression upstream (<https://github.com/ollama/ollama/issues/15609>).
 
-**The collapse zone is dense, not sparse.** Geometric analysis over the combined two-seed store — 16,067 colliding embeddings vs. 74,760 non-colliding, totalling 90,827 — reveals:
+**The collapse zone is dense, not sparse.** Geometric analysis over the full store — 18,019 colliding embeddings vs. 82,094 non-colliding, totalling 100,113 — reveals:
 
-1. **Colliding embeddings are 2.4× denser than non-colliding ones.** Mean k-NN distance for colliding embeddings is 0.106, vs 0.258 for non-colliding (ratio 0.41×).
+1. **Colliding embeddings are 2.9× denser than non-colliding ones.** Mean k-NN cosine distance for colliding embeddings is 0.075, vs 0.215 for non-colliding (ratio 0.35×).
 
-2. **71% of colliding embeddings fall in the densest quartile,** vs the expected 25% if uniformly distributed. Only 3.2% fall in the sparsest quartile.
+2. **77% of colliding embeddings fall in the densest quartile,** vs the expected 25% if uniformly distributed. Only 1.4% fall in the sparsest quartile.
 
-3. **The collapse zone is not geometrically isolated.** The distance from a colliding embedding to its nearest non-colliding neighbor (mean 0.119) is nearly identical to the non-colliding-to-non-colliding distance (mean 0.121, ratio 0.98×).
+3. **The collapse zone is not geometrically isolated.** The distance from a colliding embedding to its nearest non-colliding neighbor (mean 0.118) is nearly identical to the non-colliding-to-non-colliding distance (mean 0.120, ratio 0.98×).
 
 This means the `[UNK]` attractor region sits *among* the well-structured embeddings, not apart from them. The colliding embeddings crowd into already-dense neighborhoods where the model cannot differentiate them from legitimate nearby entities.
 
@@ -390,13 +389,13 @@ The broader lesson is about the *serving stack*, not the model: a point-release 
 
 ### 5.6 Limitations
 
-1. **Three embedding models.** We validate across mxbai-embed-large (1024-dim), nomic-embed-text (768-dim), and all-minilm (384-dim), finding 30 universal relations. All three are English-language text embedding models trained on similar corpora. Testing on multilingual models or domain-specific models (e.g., biomedical) would further characterize the generality of the three-regime structure.
+1. **Three embedding models.** We validate across mxbai-embed-large (1024-dim), nomic-embed-text (768-dim), and all-minilm (384-dim), finding 33 universal relations. All three are English-language text embedding models trained on similar corpora. Testing on multilingual models or domain-specific models (e.g., biomedical) would further characterize the generality of the three-regime structure.
 
 2. **Collision geometry analysis covers one crawl.** The distance metrics characterizing the embedding collision zone (Section 5.4) are computed from a single combined crawl (the Engishiki BFS plus the country-level P31 sample, one Wikidata snapshot). Analysis over additional diacritic-rich domains would test whether the same crowding pattern holds more broadly.
 
 3. **Label embeddings only.** We embed entity *labels* (short text strings), not descriptions or full articles. This deliberately mirrors how these models are used in practice for entity linking and knowledge graph completion (short query strings, not full documents). Richer textual representations might shift some entities out of the sparse zone, but the label-only setting represents a common real-world deployment pattern for these models.
 
-4. **Potential training data overlap.** The embedding models tested were trained on large web crawls that likely include Wikipedia content, and Wikidata entities often have corresponding Wikipedia articles. This raises the possibility that some discovered displacements reflect memorized associations from training data rather than emergent geometric structure. The cross-model consistency (30 universal operations across three independently trained models) provides partial mitigation: memorization patterns would be model-specific, while consistent operations across architectures suggest structural encoding. However, a definitive test would require embedding models trained on corpora that exclude Wikipedia, which we leave for future work.
+4. **Potential training data overlap.** The embedding models tested were trained on large web crawls that likely include Wikipedia content, and Wikidata entities often have corresponding Wikipedia articles. This raises the possibility that some discovered displacements reflect memorized associations from training data rather than emergent geometric structure. The cross-model consistency (33 universal operations across three independently trained models, on byte-identical input) provides partial mitigation: memorization patterns would be model-specific, while consistent operations across architectures suggest structural encoding. However, a definitive test would require embedding models trained on corpora that exclude Wikipedia, which we leave for future work.
 
 5. **Mechanism localized empirically, not from source.** We establish by version bisection that the regression entered at Ollama v0.14.0 with the model byte-unchanged, which rules out an inherent model-tokenizer flaw and rules in an Ollama-side tokenization/serving change. We do not pinpoint the exact upstream commit or its internal cause from Ollama source; that requires a diff of the v0.13.4 → v0.14.0 release range and is left to upstream maintainers. Whether other runtimes (llama.cpp, vLLM, sentence-transformers direct) exhibit the same collapse for this model is untested and we make no claim about them.
 
@@ -404,15 +403,15 @@ The broader lesson is about the *serving stack*, not the model: a point-release 
 
 ## 6. Conclusion
 
-We apply latent space cartography — systematic relational displacement analysis using knowledge graph triples — to three general-purpose text embedding models. The procedure, which packages standard TransE-style evaluation into a replicable pipeline, identifies 30 relations that manifest as consistent vector displacements across all three models. The functional-vs-symmetric split predicted by the KGE literature reproduces across models and domains.
+We apply latent space cartography — systematic relational displacement analysis using knowledge graph triples — to three general-purpose text embedding models embedding a byte-identical frozen text set. The procedure, which packages standard TransE-style evaluation into a replicable pipeline, identifies 33 relations that manifest as consistent vector displacements across all three models. The functional-vs-symmetric split predicted by the KGE literature reproduces across models and domains.
 
-The primary finding is a silent diacritic-collapse defect in mxbai-embed-large *as served by the Ollama runtime*, in which diacritic-bearing input collapses into a single `[UNK]`-dominated attractor region. A version bisection over 21 Ollama releases localizes it precisely: the model is byte-identical and healthy on Ollama ≤ v0.13.4, and the regression enters at v0.14.0 (2026-01-10), persisting through the current v0.24.0. Controlled pairs characterize the symptom on affected versions: the diacritical version of a word is more similar to an unrelated diacritical word in a different language (cosine 1.0) than to its own ASCII equivalent (cosine ~0.45). The defect affects 16,067 embedded labels in our dataset (147,687 colliding pairs), is concentrated in the densest regions of the embedding space, and is invisible to standard benchmarks. It is a recent serving-runtime regression — not a years-old model flaw — that has silently degraded any non-ASCII embedding workload running on Ollama ≥ v0.14.0 since 2026-01-10.
+The primary finding is a silent diacritic-collapse defect in mxbai-embed-large *as served by the Ollama runtime*, in which diacritic-bearing input collapses into a single `[UNK]`-dominated attractor region. A version bisection over 21 Ollama releases localizes it precisely: the model is byte-identical and healthy on Ollama ≤ v0.13.4, and the regression enters at v0.14.0 (2026-01-10), persisting through the current v0.24.0. Controlled pairs characterize the symptom on affected versions: unrelated diacritical words in different languages receive byte-identical embedding vectors (cosine exactly 1.0), while the diacritical version of a word sits far from its own ASCII equivalent (cosine ~0.45). The defect affects 18,019 embedded labels in our dataset (969,622 colliding pairs), is concentrated in the densest regions of the embedding space, and is invisible to standard benchmarks. It is a recent serving-runtime regression — not a years-old model flaw — that has silently degraded any non-ASCII embedding workload running on Ollama ≥ v0.14.0 since 2026-01-10.
 
 The defect was discovered because the cartographic procedure, seeded from a Japanese historical text (Engishiki), naturally reached the diacritic-rich terminology that standard benchmarks never test. This suggests a broader lesson: systematic probing of embedding spaces with domain-specific knowledge graphs can surface defects that generic benchmarks miss. The practical recommendation is to test embedding models with representative non-ASCII input before deployment.
 
 ### Data and Code Availability
 
-All code, data, and reproduction scripts are publicly available at <https://github.com/EmmaLeonhart/latent-space-cartography>. The repository includes the Wikidata collision scan, the Ollama version-bisection harness used for Table 11, the cross-model pipeline, and `collisions.csv` (the full set of colliding embedding pairs underlying Section 5.4). The bisection reproduces deterministically on a pinned Ollama runtime: the scan is clean on v0.13.4 and surfaces the regression on v0.14.0 and later.
+All code, data, and reproduction scripts are publicly available at <https://github.com/EmmaLeonhart/latent-space-cartography>. The repository includes the Wikidata collision scan, the Ollama version-bisection harness used for Table 11, the cross-model pipeline (including `reembed_frozen.py`, which embeds the identical frozen text set with each model), and `collisions.csv` (a verified sample of colliding embedding pairs; the full set underlying Section 5.4 is regenerated by `scripts/export_collisions_csv.py`). The bisection reproduces deterministically on a pinned Ollama runtime: the scan is clean on v0.13.4 and surfaces the regression on v0.14.0 and later.
 
 ### AI Disclosure
 
