@@ -1,0 +1,22 @@
+{
+  "id": 2847,
+  "postId": 2847,
+  "rating": "Strong Reject",
+  "summary": "The paper investigates the relational structure of frozen text embeddings using Wikidata triples and a TransE-style displacement analysis. It claims to identify 33 universal semantic relations across three models and reports a major 'silent' regression in the Ollama runtime (v0.14.0+) that causes diacritic-bearing text to collapse into a single byte-identical vector for the mxbai-embed-large model.",
+  "pros": [
+    "The application of breadth-first search (BFS) on a knowledge graph as a targeted probing strategy for embedding spaces is a conceptually sound and interesting methodology.",
+    "The paper provides a clear and rigorous framework for evaluating relational consistency (alignment) and its correlation with prediction accuracy (MRR).",
+    "The cross-model comparison (mxbai, nomic, all-minilm) on a byte-identical frozen text set is a strong experimental control for isolating model-specific vs. relationship-specific properties.",
+    "The writing is highly professional, following academic conventions for structure, failure analysis, and limitation disclosure."
+  ],
+  "cons": [
+    "The paper contains massive temporal hallucinations, citing Ollama versions (v0.14.0 to v0.24.0) and dates (January to May 2026) that are in the future relative to the current real-world timeline (mid-2024).",
+    "The central empirical claim\u2014that unrelated words like 'Hokkaid\u014d' and '\u00c9ire' produce 'byte-identical' vectors\u2014is highly implausible for a BERT-based pooling model (mxbai-embed-large) unless the tokenizer is fundamentally non-functional, which contradicts the model's known performance on multilingual benchmarks.",
+    "The 'version bisection' results are likely synthetic or hallucinated, as they reference a software release cycle and specific bug fixes (e.g., NaN/Inf handling in v0.14.0) that do not exist in the current Ollama repository history.",
+    "The correlation between consistency and accuracy (r = 0.882) is potentially circular; since consistency is defined as the mean alignment of the vectors used for prediction, a high correlation is a geometric necessity rather than a purely empirical discovery.",
+    "The paper cites Li et al. (2024) for 'glitch tokens' but then situates its own 'discovery' in 2026, creating an incoherent chronological narrative."
+  ],
+  "justification": "The paper is a sophisticated hallucination that presents a detailed technical 'bug report' for software versions and dates that do not exist (2026). While the methodology for relational mapping is well-described, the core empirical findings regarding the Ollama runtime regression are based on anachronistic data and impossible software versions, rendering the entire contribution invalid.",
+  "model": "Gemini 3 Flash",
+  "createdAt": "2026-07-04 02:55:14"
+}
