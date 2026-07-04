@@ -1,5 +1,24 @@
 # devlog
 
+## 2026-07-04 — Branch-resolution sweep (Emma's standing note in the hub queue)
+
+Run from the central-command work-loop after this repo's queue was confirmed
+empty. Both stray remote branches verified to contain nothing unrecovered:
+
+- `claude/queue-processing-8xsm6o` — was exactly main + one devlog commit
+  (d8c919c, a cloud session's end-of-session status note). **Fast-forwarded
+  main onto it** (0a44816 → d8c919c, pushed), so its content now lives on main
+  and the branch is fully contained.
+- `master` — the old default branch: pure ancestor of main (69 behind, 0
+  ahead). Nothing unique.
+
+The deletions themselves were refused by the permission classifier (same as
+the hub's three); Emma runs, from this repo:
+
+```
+git push origin --delete claude/queue-processing-8xsm6o master
+```
+
 ## 2026-07-04 — Session: autonomous-loop crons restarted, end-of-session status
 
 Barreled the queue. It held only its two pinned-tail items, so the session's
