@@ -49,6 +49,13 @@
 \usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage{longtable}
+% pandoc wraps each caption-less data table in {\def\LTcaptype{none} ...}
+% to suppress auto-numbering. longtable then evaluates
+% \refstepcounter{\LTcaptype} = \refstepcounter{none}, which raises
+% "! LaTeX Error: No counter 'none' defined." under pdflatex (this is what
+% blocked the arXiv build). Define the counter so it is a harmless no-op;
+% the visible "Table N." labels are set manually in the body text.
+\newcounter{none}
 \usepackage{array}
 % pandoc's longtable column-width syntax uses arithmetic on
 % \linewidth which needs the calc package and the \real macro from
