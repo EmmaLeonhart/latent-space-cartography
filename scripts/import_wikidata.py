@@ -36,7 +36,10 @@ if hasattr(sys.stdout, 'reconfigure'):
 
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
-USER_AGENT = "embedding-mapping/0.1 (https://github.com/Immanuelle/embedding-mapping)"
+USER_AGENT = (
+    "latent-space-cartography/1.0 "
+    "(https://github.com/EmmaLeonhart/latent-space-cartography; emma@topazcomputing.com)"
+)
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "mxbai-embed-large")
 
 WD = Namespace("http://www.wikidata.org/entity/")
